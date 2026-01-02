@@ -134,14 +134,21 @@ function computeTimeState(nowMs: number, lastSyncAt: number, driftMs: number): T
   const isActive = !isBeforeStart && !isAfterEnd;
   
   const elapsedMs = Math.max(0, Math.min(nowMs - startMs, TOTAL_DURATION_MS));
-  const remainingMs = Math.max(0, endMs - nowMs);
+  
+  // Remaining = Total Duration - Elapsed (not now to end!)
+  const remainingMs = Math.max(0, Math.min(TOTAL_DURATION_MS - elapsedMs, TOTAL_DURATION_MS));
   
   const percentComplete = Math.min(100, Math.max(0, (elapsedMs / TOTAL_DURATION_MS) * 100));
   
-  const dayNumber = Math.min(
-    Math.max(1, Math.floor(elapsedMs / (1000 * 60 * 60 * 24)) + 1),
-    TOTAL_DAYS
-  );
+  // Day number: 0 if before start, 1-365 during period, 365 if after end
+  let dayNumber: number;
+  if (isBeforeStart) {
+    dayNumber = 0;
+  } else if (isAfterEnd) {
+    dayNumber = TOTAL_DAYS;
+  } else {
+    dayNumber = Math.floor(elapsedMs / (1000 * 60 * 60 * 24)) + 1;
+  }
   
   // Current date key in UTC
   const now = new Date(nowMs);

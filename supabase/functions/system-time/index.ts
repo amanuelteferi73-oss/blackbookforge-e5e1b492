@@ -76,17 +76,22 @@ Deno.serve(async (req) => {
     // Calculate elapsed (clamped to 0 - total duration)
     const elapsedMs = Math.max(0, Math.min(nowMs - startMs, TOTAL_DURATION_MS));
     
-    // Calculate remaining (clamped to 0 - total duration)
-    const remainingMs = Math.max(0, endMs - nowMs);
+    // Calculate remaining - MUST be relative to elapsed, not current time!
+    // Remaining = Total Duration - Elapsed (clamped to 0 - total duration)
+    const remainingMs = Math.max(0, Math.min(TOTAL_DURATION_MS - elapsedMs, TOTAL_DURATION_MS));
 
     // Percentage complete (0-100)
     const percentComplete = Math.min(100, Math.max(0, (elapsedMs / TOTAL_DURATION_MS) * 100));
 
-    // Current day number (1-365)
-    const dayNumber = Math.min(
-      Math.max(1, Math.floor(elapsedMs / (1000 * 60 * 60 * 24)) + 1),
-      TOTAL_DAYS
-    );
+    // Current day number (1-365, but 0 if before start)
+    let dayNumber: number;
+    if (isBeforeStart) {
+      dayNumber = 0; // Not started yet
+    } else if (isAfterEnd) {
+      dayNumber = TOTAL_DAYS; // Completed
+    } else {
+      dayNumber = Math.floor(elapsedMs / (1000 * 60 * 60 * 24)) + 1;
+    }
 
     // Current date key for daily operations (YYYY-MM-DD in UTC)
     const currentDateKey = now.toISOString().split('T')[0];
