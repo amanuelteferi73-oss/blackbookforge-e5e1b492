@@ -131,7 +131,7 @@ export function saveCheckIn(checkIn: DailyCheckIn): void {
   if (state) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayKey = getTodayKey(yesterday);
+    const yesterdayKey = yesterday.toISOString().split('T')[0];
     const hadYesterdayCheckIn = !!checkIns[yesterdayKey];
     
     const newStreak = hadYesterdayCheckIn ? state.currentStreak + 1 : 1;
