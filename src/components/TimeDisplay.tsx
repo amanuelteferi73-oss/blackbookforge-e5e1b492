@@ -5,10 +5,12 @@ export function TimeDisplay() {
   const time = useTimeEngine(1000);
   const synced = hasSynced();
 
-  // Visual urgency states
-  const isUrgent = time.remaining.days < 30;
-  const isCritical = time.remaining.days < 7;
-  const isDayEnding = time.remaining.hours === 0 && time.remaining.days === time.dayNumber;
+  // Visual urgency states (only apply when system is active)
+  const isUrgent = time.isActive && time.remaining.days < 30;
+  const isCritical = time.isActive && time.remaining.days < 7;
+  
+  // Display day number: show 0 as "—" if before start
+  const displayDayNumber = time.isBeforeStart ? '—' : time.dayNumber;
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border">
@@ -28,7 +30,7 @@ export function TimeDisplay() {
           <div className="flex flex-col items-center flex-1 max-w-xs sm:max-w-md mx-4 sm:mx-8">
             <div className="flex items-center justify-between w-full mb-1">
               <span className="data-label text-xs uppercase tracking-wider text-muted-foreground">
-                Day {time.dayNumber}/{time.totalDays}
+                {time.isBeforeStart ? 'Not Started' : `Day ${displayDayNumber}/${time.totalDays}`}
               </span>
               <span className="font-mono text-xs sm:text-sm text-foreground tabular-nums">
                 {time.percentComplete.toFixed(2)}%
