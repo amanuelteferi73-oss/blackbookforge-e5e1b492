@@ -14,16 +14,375 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      asset_unlock_conditions: {
+        Row: {
+          asset_id: string
+          condition_type: Database["public"]["Enums"]["unlock_condition_type"]
+          condition_value: Json
+          created_at: string
+          id: string
+        }
+        Insert: {
+          asset_id: string
+          condition_type: Database["public"]["Enums"]["unlock_condition_type"]
+          condition_value?: Json
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          asset_id?: string
+          condition_type?: Database["public"]["Enums"]["unlock_condition_type"]
+          condition_value?: Json
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_unlock_conditions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_unlock_status: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          unlock_reason: string | null
+          unlocked_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          unlock_reason?: string | null
+          unlocked_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          unlock_reason?: string | null
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_unlock_status_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assets: {
+        Row: {
+          category: Database["public"]["Enums"]["asset_category"]
+          content: string | null
+          created_at: string
+          file_path: string | null
+          id: string
+          name: string | null
+          type: Database["public"]["Enums"]["asset_type"]
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["asset_category"]
+          content?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          name?: string | null
+          type: Database["public"]["Enums"]["asset_type"]
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["asset_category"]
+          content?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          name?: string | null
+          type?: Database["public"]["Enums"]["asset_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_checkins: {
+        Row: {
+          created_at: string
+          date: string
+          failure_note: string | null
+          id: string
+          is_missed: boolean
+          submitted_at: string | null
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          failure_note?: string | null
+          id?: string
+          is_missed?: boolean
+          submitted_at?: string | null
+          total_score?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          failure_note?: string | null
+          id?: string
+          is_missed?: boolean
+          submitted_at?: string | null
+          total_score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_checkins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_rule_evaluations: {
+        Row: {
+          created_at: string
+          daily_checkin_id: string
+          id: string
+          numeric_value: number | null
+          rule_id: string
+          score_contribution: number
+          value: boolean
+        }
+        Insert: {
+          created_at?: string
+          daily_checkin_id: string
+          id?: string
+          numeric_value?: number | null
+          rule_id: string
+          score_contribution?: number
+          value?: boolean
+        }
+        Update: {
+          created_at?: string
+          daily_checkin_id?: string
+          id?: string
+          numeric_value?: number | null
+          rule_id?: string
+          score_contribution?: number
+          value?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_rule_evaluations_daily_checkin_id_fkey"
+            columns: ["daily_checkin_id"]
+            isOneToOne: false
+            referencedRelation: "daily_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_rule_evaluations_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "daily_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_rules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      failure_logs: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "failure_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_login_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          last_login_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_login_at?: string | null
+        }
+        Relationships: []
+      }
+      streaks: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          start_date: string
+          streak_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          start_date: string
+          streak_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          streak_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streaks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_time: {
+        Row: {
+          created_at: string
+          id: string
+          last_tick_at: string
+          system_end_date: string
+          system_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_tick_at?: string
+          system_end_date?: string
+          system_start_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_tick_at?: string
+          system_end_date?: string
+          system_start_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_checkin_score: {
+        Args: { _checkin_id: string }
+        Returns: number
+      }
+      check_asset_unlock: { Args: { _asset_id: string }; Returns: boolean }
+      get_average_score: {
+        Args: { _days?: number; _user_id: string }
+        Returns: number
+      }
+      get_current_streak: { Args: { _user_id: string }; Returns: number }
+      owns_asset: { Args: { _asset_id: string }; Returns: boolean }
+      owns_checkin: { Args: { _checkin_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      asset_category: "past" | "future" | "dream" | "reward" | "legacy"
+      asset_type: "image" | "audio" | "message"
+      unlock_condition_type: "score" | "streak" | "date" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +509,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      asset_category: ["past", "future", "dream", "reward", "legacy"],
+      asset_type: ["image", "audio", "message"],
+      unlock_condition_type: ["score", "streak", "date", "manual"],
+    },
   },
 } as const
