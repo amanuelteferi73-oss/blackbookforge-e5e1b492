@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TimeDisplay } from "@/components/TimeDisplay";
 import { Navigation } from "@/components/Navigation";
+import { UserInitProvider } from "@/providers/UserInitProvider";
 import Index from "./pages/Index";
 import CheckInPage from "./pages/CheckInPage";
 import VaultPage from "./pages/VaultPage";
@@ -17,27 +18,29 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        {/* Global Time Display */}
-        <TimeDisplay />
-        
-        {/* Main Content with padding for fixed headers */}
-        <main className="pt-[73px] md:pt-[121px] pb-[72px] md:pb-0">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/check-in" element={<CheckInPage />} />
-            <Route path="/vault" element={<VaultPage />} />
-            <Route path="/reality" element={<RealityPage />} />
-            <Route path="/progress" element={<ProgressPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        
-        {/* Navigation */}
-        <Navigation />
-      </BrowserRouter>
+      <UserInitProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          {/* Global Time Display */}
+          <TimeDisplay />
+          
+          {/* Main Content with padding for fixed headers */}
+          <main className="pt-[73px] md:pt-[121px] pb-[72px] md:pb-0">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/check-in" element={<CheckInPage />} />
+              <Route path="/vault" element={<VaultPage />} />
+              <Route path="/reality" element={<RealityPage />} />
+              <Route path="/progress" element={<ProgressPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          
+          {/* Navigation */}
+          <Navigation />
+        </BrowserRouter>
+      </UserInitProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
