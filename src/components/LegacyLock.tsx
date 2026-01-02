@@ -1,5 +1,5 @@
 import { useTimeEngine } from '@/hooks/useTimeEngine';
-import { END_DATE, formatDuration } from '@/lib/timeEngine';
+import { formatDuration } from '@/lib/timeEngine';
 import { Lock, Unlock } from 'lucide-react';
 
 export function LegacyLock() {

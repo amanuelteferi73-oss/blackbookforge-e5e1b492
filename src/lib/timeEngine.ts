@@ -1,22 +1,14 @@
-// TIME ENGINE - CORE SYSTEM
+// TIME ENGINE - BACKEND-AUTHORITATIVE SYSTEM
 // Fixed timeline: February 1, 2026 - February 1, 2027
-// Time never pauses. Time never lies.
+// Time never pauses. Time never lies. Backend is law.
 
-export const START_DATE = new Date('2026-02-01T00:00:00');
-export const END_DATE = new Date('2027-02-01T00:00:00');
+import { supabase } from '@/integrations/supabase/client';
+
+// Canonical definitions (must match backend)
+export const START_DATE = new Date('2026-02-01T00:00:00.000Z');
+export const END_DATE = new Date('2027-02-01T00:00:00.000Z');
 export const TOTAL_DURATION_MS = END_DATE.getTime() - START_DATE.getTime();
-
-export interface TimeState {
-  now: Date;
-  elapsed: Duration;
-  remaining: Duration;
-  percentComplete: number;
-  dayNumber: number;
-  totalDays: number;
-  isBeforeStart: boolean;
-  isAfterEnd: boolean;
-  isActive: boolean;
-}
+export const TOTAL_DAYS = 365;
 
 export interface Duration {
   days: number;
@@ -24,6 +16,152 @@ export interface Duration {
   minutes: number;
   seconds: number;
   totalMs: number;
+}
+
+export interface TimeState {
+  now: Date;
+  serverTimeMs: number;
+  elapsed: Duration;
+  remaining: Duration;
+  percentComplete: number;
+  dayNumber: number;
+  totalDays: number;
+  currentDateKey: string;
+  isBeforeStart: boolean;
+  isAfterEnd: boolean;
+  isActive: boolean;
+  lastSyncAt: number;
+  driftMs: number;
+}
+
+export interface ServerTimeResponse {
+  serverTime: string;
+  serverTimeMs: number;
+  systemStart: string;
+  systemStartMs: number;
+  systemEnd: string;
+  systemEndMs: number;
+  elapsed: {
+    ms: number;
+    seconds: number;
+    minutes: number;
+    hours: number;
+    days: number;
+  };
+  remaining: {
+    ms: number;
+    seconds: number;
+    minutes: number;
+    hours: number;
+    days: number;
+  };
+  dayNumber: number;
+  totalDays: number;
+  percentComplete: number;
+  currentDateKey: string;
+  isBeforeStart: boolean;
+  isAfterEnd: boolean;
+  isActive: boolean;
+}
+
+// Time sync state
+let lastServerSync: ServerTimeResponse | null = null;
+let lastSyncTimestamp = 0;
+let syncInProgress = false;
+
+// Drift threshold - resync if client drifts more than 5 seconds
+const DRIFT_THRESHOLD_MS = 5000;
+// Resync interval - fetch server time every 60 seconds
+const RESYNC_INTERVAL_MS = 60000;
+
+/**
+ * Fetch canonical time from backend
+ */
+export async function fetchServerTime(): Promise<ServerTimeResponse | null> {
+  if (syncInProgress) return lastServerSync;
+  
+  syncInProgress = true;
+  try {
+    const { data, error } = await supabase.functions.invoke('system-time');
+    
+    if (error) {
+      console.error('[TIME-ENGINE] Server sync failed:', error);
+      syncInProgress = false;
+      return null;
+    }
+    
+    lastServerSync = data as ServerTimeResponse;
+    lastSyncTimestamp = Date.now();
+    
+    console.log(`[TIME-ENGINE] Synced with server: Day ${lastServerSync.dayNumber}/${lastServerSync.totalDays}`);
+    syncInProgress = false;
+    return lastServerSync;
+  } catch (err) {
+    console.error('[TIME-ENGINE] Server sync error:', err);
+    syncInProgress = false;
+    return null;
+  }
+}
+
+/**
+ * Calculate time state using server reference + client interpolation
+ */
+export function getTimeState(forceClientOnly = false): TimeState {
+  const clientNow = Date.now();
+  
+  // If we have a recent server sync, interpolate from it
+  if (lastServerSync && lastSyncTimestamp > 0 && !forceClientOnly) {
+    const timeSinceSync = clientNow - lastSyncTimestamp;
+    const interpolatedServerMs = lastServerSync.serverTimeMs + timeSinceSync;
+    const driftMs = clientNow - interpolatedServerMs;
+    
+    return computeTimeState(interpolatedServerMs, lastSyncTimestamp, Math.abs(driftMs));
+  }
+  
+  // Fallback to client time (only used before first sync)
+  return computeTimeState(clientNow, 0, 0);
+}
+
+/**
+ * Core computation of time state from a reference timestamp
+ */
+function computeTimeState(nowMs: number, lastSyncAt: number, driftMs: number): TimeState {
+  const startMs = START_DATE.getTime();
+  const endMs = END_DATE.getTime();
+  
+  const isBeforeStart = nowMs < startMs;
+  const isAfterEnd = nowMs > endMs;
+  const isActive = !isBeforeStart && !isAfterEnd;
+  
+  const elapsedMs = Math.max(0, Math.min(nowMs - startMs, TOTAL_DURATION_MS));
+  const remainingMs = Math.max(0, endMs - nowMs);
+  
+  const percentComplete = Math.min(100, Math.max(0, (elapsedMs / TOTAL_DURATION_MS) * 100));
+  
+  const dayNumber = Math.min(
+    Math.max(1, Math.floor(elapsedMs / (1000 * 60 * 60 * 24)) + 1),
+    TOTAL_DAYS
+  );
+  
+  // Current date key in UTC
+  const now = new Date(nowMs);
+  const currentDateKey = now.toISOString().split('T')[0];
+  
+  return {
+    now,
+    serverTimeMs: nowMs,
+    elapsed: msToDuration(elapsedMs),
+    remaining: msToDuration(remainingMs),
+    percentComplete,
+    dayNumber,
+    totalDays: TOTAL_DAYS,
+    currentDateKey,
+    isBeforeStart,
+    isAfterEnd,
+    isActive,
+    lastSyncAt,
+    driftMs,
+  };
 }
 
 function msToDuration(ms: number): Duration {
@@ -41,36 +179,41 @@ function msToDuration(ms: number): Duration {
   };
 }
 
-export function getTimeState(now: Date = new Date()): TimeState {
-  const nowMs = now.getTime();
-  const startMs = START_DATE.getTime();
-  const endMs = END_DATE.getTime();
-
-  const isBeforeStart = nowMs < startMs;
-  const isAfterEnd = nowMs > endMs;
-  const isActive = !isBeforeStart && !isAfterEnd;
-
-  const elapsedMs = Math.max(0, Math.min(nowMs - startMs, TOTAL_DURATION_MS));
-  const remainingMs = Math.max(0, endMs - nowMs);
-
-  const percentComplete = Math.min(100, Math.max(0, (elapsedMs / TOTAL_DURATION_MS) * 100));
+/**
+ * Check if we need to resync with server
+ */
+export function needsResync(): boolean {
+  if (!lastSyncTimestamp) return true;
   
-  const dayNumber = Math.floor(elapsedMs / (1000 * 60 * 60 * 24)) + 1;
-  const totalDays = Math.ceil(TOTAL_DURATION_MS / (1000 * 60 * 60 * 24));
-
-  return {
-    now,
-    elapsed: msToDuration(elapsedMs),
-    remaining: msToDuration(remainingMs),
-    percentComplete,
-    dayNumber: Math.min(dayNumber, totalDays),
-    totalDays,
-    isBeforeStart,
-    isAfterEnd,
-    isActive,
-  };
+  const timeSinceSync = Date.now() - lastSyncTimestamp;
+  
+  // Resync if too much time has passed
+  if (timeSinceSync > RESYNC_INTERVAL_MS) return true;
+  
+  // Resync if drift exceeds threshold
+  const state = getTimeState();
+  if (state.driftMs > DRIFT_THRESHOLD_MS) return true;
+  
+  return false;
 }
 
+/**
+ * Get the last successful server sync data
+ */
+export function getLastSync(): ServerTimeResponse | null {
+  return lastServerSync;
+}
+
+/**
+ * Check if we have ever synced with server
+ */
+export function hasSynced(): boolean {
+  return lastServerSync !== null;
+}
+
+/**
+ * Format duration for display
+ */
 export function formatDuration(d: Duration, includeSeconds = true): string {
   const parts = [
     `${d.days}d`,
@@ -85,6 +228,9 @@ export function formatDuration(d: Duration, includeSeconds = true): string {
   return parts.join(' ');
 }
 
+/**
+ * Format date for display
+ */
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -94,6 +240,10 @@ export function formatDate(date: Date): string {
   });
 }
 
-export function getTodayKey(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+/**
+ * Get today's date key (YYYY-MM-DD) using server-synced time
+ */
+export function getTodayKey(): string {
+  const state = getTimeState();
+  return state.currentDateKey;
 }
