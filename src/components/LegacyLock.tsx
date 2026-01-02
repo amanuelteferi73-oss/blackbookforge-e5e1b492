@@ -31,7 +31,7 @@ export function LegacyLock() {
           ) : (
             <>
               <p className="text-muted-foreground text-sm mb-4">
-                Completely inaccessible until February 1, 2027
+                Completely inaccessible until January 1, 2027
               </p>
               <div className="font-mono text-lg text-locked-foreground">
                 {formatDuration(time.remaining)} remaining

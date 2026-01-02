@@ -1,12 +1,13 @@
 // TIME ENGINE - BACKEND-AUTHORITATIVE SYSTEM
-// Fixed timeline: February 1, 2026 - February 1, 2027
+// Fixed timeline: January 1, 2026 - January 1, 2027
 // Time never pauses. Time never lies. Backend is law.
 
 import { supabase } from '@/integrations/supabase/client';
 
 // Canonical definitions (must match backend)
-export const START_DATE = new Date('2026-02-01T00:00:00.000Z');
-export const END_DATE = new Date('2027-02-01T00:00:00.000Z');
+// System started January 1, 2026 at 00:00:00 UTC
+export const START_DATE = new Date('2026-01-01T00:00:00.000Z');
+export const END_DATE = new Date('2027-01-01T00:00:00.000Z');
 export const TOTAL_DURATION_MS = END_DATE.getTime() - START_DATE.getTime();
 export const TOTAL_DAYS = 365;
 

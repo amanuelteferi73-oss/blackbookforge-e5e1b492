@@ -6,8 +6,9 @@ const corsHeaders = {
 };
 
 // CANONICAL TIME DEFINITIONS - IMMUTABLE
-const SYSTEM_START = new Date('2026-02-01T00:00:00.000Z');
-const SYSTEM_END = new Date('2027-02-01T00:00:00.000Z');
+// System started January 1, 2026 at 00:00:00 UTC
+const SYSTEM_START = new Date('2026-01-01T00:00:00.000Z');
+const SYSTEM_END = new Date('2027-01-01T00:00:00.000Z');
 const TOTAL_DURATION_MS = SYSTEM_END.getTime() - SYSTEM_START.getTime();
 const TOTAL_DAYS = 365;
 
