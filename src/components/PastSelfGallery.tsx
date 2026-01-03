@@ -19,6 +19,8 @@ import past18 from '@/assets/past-self/past-18.jpg';
 import past19 from '@/assets/past-self/past-19.png';
 import past20 from '@/assets/past-self/past-20.jpg';
 import past21 from '@/assets/past-self/past-21.jpg';
+import { useUserGalleryImages } from '@/hooks/useUserGalleryImages';
+import { GalleryUploadButton } from '@/components/gallery/GalleryUploadButton';
 
 const PAST_SELF_IMAGES = [
   { src: past1, alt: 'Past self - moment 1' },
@@ -45,6 +47,11 @@ const PAST_SELF_IMAGES = [
 ];
 
 export function PastSelfGallery() {
+  const { images: userImages, isUploading, uploadImage } = useUserGalleryImages('past');
+  
+  const totalSystemImages = PAST_SELF_IMAGES.length;
+  const totalImages = totalSystemImages + userImages.length;
+
   return (
     <section className="py-8">
       <div className="mb-6">
@@ -57,9 +64,10 @@ export function PastSelfGallery() {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* System images */}
         {PAST_SELF_IMAGES.map((image, index) => (
           <div 
-            key={index}
+            key={`system-${index}`}
             className="relative aspect-square overflow-hidden rounded bg-muted border border-border group"
           >
             <img
@@ -75,6 +83,34 @@ export function PastSelfGallery() {
             </div>
           </div>
         ))}
+
+        {/* User uploaded images */}
+        {userImages.map((image, index) => (
+          <div 
+            key={image.id}
+            className="relative aspect-square overflow-hidden rounded bg-muted border border-border group"
+          >
+            <img
+              src={image.url}
+              alt={`User reality - ${index + 1}`}
+              className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-60" />
+            <div className="absolute bottom-2 left-2">
+              <span className="font-mono text-[10px] text-muted-foreground">
+                #{(totalSystemImages + index + 1).toString().padStart(2, '0')}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* Upload button at the end */}
+        <GalleryUploadButton
+          section="reality"
+          isUploading={isUploading}
+          onUpload={uploadImage}
+          imageIndex={totalImages}
+        />
       </div>
     </section>
   );
