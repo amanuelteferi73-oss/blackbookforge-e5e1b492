@@ -1,70 +1,105 @@
 import { useState } from 'react';
-import { Lock, Upload, Image, Music, MessageSquare, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Lock, Unlock, Loader2 } from 'lucide-react';
+import { VAULT_REWARDS, getPhaseOrder, getRewardsByPhase, VaultReward } from '@/lib/vaultRewards';
+import { useVaultAssets } from '@/hooks/useVaultAssets';
+import { PhaseGroup } from '@/components/vault/PhaseGroup';
+import { ProofUploadModal } from '@/components/vault/ProofUploadModal';
 import { LegacyLock } from '@/components/LegacyLock';
 
-const CATEGORIES = [
-  { id: 'future', label: 'Future Self', icon: Image },
-  { id: 'dream', label: 'Dream Life', icon: Image },
-  { id: 'reward', label: 'Rewards', icon: Music },
-];
-
 export default function VaultPage() {
-  const [activeCategory, setActiveCategory] = useState('future');
+  const { assets, isLoading, uploadProof, claimReward, getAssetState } = useVaultAssets();
+  const [selectedReward, setSelectedReward] = useState<VaultReward | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleAssetClick = (reward: VaultReward) => {
+    setSelectedReward(reward);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedReward(null);
+  };
+
+  // Calculate vault stats
+  const totalRewards = VAULT_REWARDS.length;
+  const unlockedCount = VAULT_REWARDS.filter(r => getAssetState(r.id).isUnlocked).length;
+  const proofsPending = VAULT_REWARDS.filter(r => {
+    const state = getAssetState(r.id);
+    return state.proofUploaded && !state.isUnlocked;
+  }).length;
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="container mx-auto px-4 pt-6">
-        <div className="mb-6">
+        {/* Header */}
+        <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
             ASSET VAULT
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Your future. Locked until earned.
+            Your rewards. Locked until earned.
           </p>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {CATEGORIES.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveCategory(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded text-sm whitespace-nowrap transition-colors ${
-                activeCategory === id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        <div className="execution-card p-12 rounded text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-locked/20 flex items-center justify-center mb-4">
-            <Lock className="w-8 h-8 text-locked-foreground" />
+        {/* Vault Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="execution-card p-4 rounded text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Lock className="w-4 h-4 text-locked-foreground" />
+            </div>
+            <p className="font-mono text-xl text-foreground">{totalRewards - unlockedCount}</p>
+            <span className="data-label">Locked</span>
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            No Assets Yet
-          </h3>
-          <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-            Upload images of your future self, dream life, and rewards. 
-            They will be locked until you earn access through consistent execution.
-          </p>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" />
-            Upload Assets
-          </Button>
+          <div className="execution-card p-4 rounded text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Unlock className="w-4 h-4 text-success" />
+            </div>
+            <p className="font-mono text-xl text-success">{unlockedCount}</p>
+            <span className="data-label">Unlocked</span>
+          </div>
+          <div className="execution-card p-4 rounded text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="w-4 h-4 rounded-full bg-warning/50 animate-pulse" />
+            </div>
+            <p className="font-mono text-xl text-warning">{proofsPending}</p>
+            <span className="data-label">Pending</span>
+          </div>
         </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Phase Groups */}
+        {!isLoading && getPhaseOrder().map(phase => (
+          <PhaseGroup
+            key={phase}
+            phase={phase}
+            rewards={getRewardsByPhase(phase)}
+            getAssetState={getAssetState}
+            onAssetClick={handleAssetClick}
+          />
+        ))}
 
         {/* Legacy Lock Section */}
-        <div className="mt-8">
+        <div className="mt-12">
           <LegacyLock />
         </div>
       </div>
+
+      {/* Proof Upload Modal */}
+      <ProofUploadModal
+        reward={selectedReward}
+        state={selectedReward ? getAssetState(selectedReward.id) : null}
+        open={modalOpen}
+        onClose={handleCloseModal}
+        onUploadProof={uploadProof}
+        onClaimReward={claimReward}
+      />
     </div>
   );
 }
