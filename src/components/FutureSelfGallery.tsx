@@ -9,6 +9,8 @@ import future7 from '@/assets/future-self/future-7.jpg';
 import future8 from '@/assets/future-self/future-8.jpg';
 import future9 from '@/assets/future-self/future-9.jpg';
 import future10 from '@/assets/future-self/future-10.jpg';
+import { useUserGalleryImages } from '@/hooks/useUserGalleryImages';
+import { GalleryUploadButton } from '@/components/gallery/GalleryUploadButton';
 
 const FUTURE_SELF_IMAGES = [
   { src: future1, alt: 'Future self - moment 1', caption: 'Emmanuel sitting in his Tesla Model X' },
@@ -25,6 +27,10 @@ const FUTURE_SELF_IMAGES = [
 
 export function FutureSelfGallery() {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
+  const { images: userImages, isUploading, uploadImage } = useUserGalleryImages('future');
+  
+  const totalSystemImages = FUTURE_SELF_IMAGES.length;
+  const totalImages = totalSystemImages + userImages.length;
 
   return (
     <section className="py-8">
@@ -38,9 +44,10 @@ export function FutureSelfGallery() {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* System images */}
         {FUTURE_SELF_IMAGES.map((image, index) => (
           <div 
-            key={index}
+            key={`system-${index}`}
             className="relative aspect-square overflow-hidden rounded bg-muted border border-border group cursor-pointer"
             onClick={() => setSelectedImage(selectedImage === index ? null : index)}
           >
@@ -75,6 +82,41 @@ export function FutureSelfGallery() {
             </div>
           </div>
         ))}
+
+        {/* User uploaded images */}
+        {userImages.map((image, index) => (
+          <div 
+            key={image.id}
+            className="relative aspect-square overflow-hidden rounded bg-muted border border-border group"
+          >
+            <img
+              src={image.url}
+              alt={`User vision - ${index + 1}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-70" />
+            
+            <div className="absolute bottom-2 left-2">
+              <span className="font-mono text-[10px] text-muted-foreground">
+                #{(totalSystemImages + index + 1).toString().padStart(2, '0')}
+              </span>
+            </div>
+            
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="font-mono text-[9px] text-primary/80 uppercase tracking-wider">
+                soon
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* Upload button at the end */}
+        <GalleryUploadButton
+          section="vision"
+          isUploading={isUploading}
+          onUpload={uploadImage}
+          imageIndex={totalImages}
+        />
       </div>
     </section>
   );
