@@ -123,6 +123,7 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          discipline_breach: boolean
           failure_note: string | null
           id: string
           is_missed: boolean
@@ -133,6 +134,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date: string
+          discipline_breach?: boolean
           failure_note?: string | null
           id?: string
           is_missed?: boolean
@@ -143,6 +145,7 @@ export type Database = {
         Update: {
           created_at?: string
           date?: string
+          discipline_breach?: boolean
           failure_note?: string | null
           id?: string
           is_missed?: boolean
@@ -242,6 +245,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      failed_items: {
+        Row: {
+          created_at: string
+          daily_checkin_id: string
+          id: string
+          points_lost: number
+          question_text: string
+          section: string
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          daily_checkin_id: string
+          id?: string
+          points_lost?: number
+          question_text: string
+          section: string
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          daily_checkin_id?: string
+          id?: string
+          points_lost?: number
+          question_text?: string
+          section?: string
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "failed_items_daily_checkin_id_fkey"
+            columns: ["daily_checkin_id"]
+            isOneToOne: false
+            referencedRelation: "daily_checkins"
             referencedColumns: ["id"]
           },
         ]
