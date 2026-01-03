@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
-import { Upload, Check, ExternalLink, X, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Check, ExternalLink, Loader2, PenLine } from 'lucide-react';
 import { VaultReward } from '@/lib/vaultRewards';
 import { VaultAssetState } from '@/hooks/useVaultAssets';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,7 @@ interface ProofUploadModalProps {
   state: VaultAssetState | null;
   open: boolean;
   onClose: () => void;
-  onUploadProof: (rewardId: number, file: File) => Promise<boolean>;
+  onSubmitProof: (rewardId: number, anchorText: string, reflectionText: string) => Promise<boolean>;
   onClaimReward: (rewardId: number) => Promise<boolean>;
 }
 
@@ -25,64 +26,58 @@ export function ProofUploadModal({
   state,
   open,
   onClose,
-  onUploadProof,
+  onSubmitProof,
   onClaimReward,
 }: ProofUploadModalProps) {
-  const [proofUploaded, setProofUploaded] = useState(state?.proofUploaded || false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [step, setStep] = useState<'proof' | 'confirm'>('proof');
+  const [anchorText, setAnchorText] = useState('');
+  const [reflectionText, setReflectionText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when modal opens with new reward
+  // Reset state when modal closes
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       onClose();
-      // Reset local state after close animation
       setTimeout(() => {
-        setProofUploaded(false);
-        setUploadedFileName(null);
+        setStep('proof');
+        setAnchorText('');
+        setReflectionText('');
       }, 200);
     }
   };
 
-  // Sync with state prop when it changes
-  if (state?.proofUploaded && !proofUploaded) {
-    setProofUploaded(true);
-  }
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !reward) return;
-
-    setIsUploading(true);
-    const success = await onUploadProof(reward.id, file);
-    setIsUploading(false);
-
-    if (success) {
-      setProofUploaded(true);
-      setUploadedFileName(file.name);
-    }
+  const handleContinue = () => {
+    setStep('confirm');
   };
 
-  const handleClaim = async () => {
+  const handleCancel = () => {
+    setStep('proof');
+  };
+
+  const handleConfirmUnlock = async () => {
     if (!reward) return;
 
-    setIsClaiming(true);
-    const success = await onClaimReward(reward.id);
-    setIsClaiming(false);
-
-    if (success && reward.rewardLink) {
-      window.open(reward.rewardLink, '_blank', 'noopener,noreferrer');
-      onClose();
-    } else if (success) {
+    setIsSubmitting(true);
+    const proofSuccess = await onSubmitProof(reward.id, anchorText, reflectionText);
+    
+    if (proofSuccess) {
+      setIsClaiming(true);
+      const claimSuccess = await onClaimReward(reward.id);
+      setIsClaiming(false);
+      
+      if (claimSuccess && reward.rewardLink) {
+        window.open(reward.rewardLink, '_blank', 'noopener,noreferrer');
+      }
       onClose();
     }
+    setIsSubmitting(false);
   };
 
   if (!reward) return null;
 
   const isUnlocked = state?.isUnlocked || false;
+  const canContinue = anchorText.trim().length > 0 && reflectionText.trim().length > 0;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -108,6 +103,19 @@ export function ProofUploadModal({
                 Unlocked on {state?.unlockedAt ? new Date(state.unlockedAt).toLocaleDateString() : 'N/A'}
               </p>
             </div>
+
+            {/* Show saved proof text if exists */}
+            {(state?.proofText || state?.proofReflection) && (
+              <div className="p-4 bg-muted/50 rounded border border-border space-y-3">
+                <span className="data-label text-xs">Your Proof (Permanent)</span>
+                {state.proofText && (
+                  <p className="text-sm text-muted-foreground italic">"{state.proofText}"</p>
+                )}
+                {state.proofReflection && (
+                  <p className="text-sm text-foreground">{state.proofReflection}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <span className="data-label">Your Reward</span>
@@ -135,94 +143,109 @@ export function ProofUploadModal({
               </div>
             )}
           </div>
-        ) : (
+        ) : step === 'proof' ? (
+          /* Step 1: Text-Based Proof */
           <div className="space-y-6">
-            {/* Section A: Proof Upload */}
-            <div className={cn(
-              'p-4 rounded border transition-colors',
-              proofUploaded
-                ? 'bg-success/10 border-success/30'
-                : 'bg-muted border-border'
-            )}>
-              <div className="flex items-center gap-2 mb-3">
-                {proofUploaded ? (
-                  <Check className="w-5 h-5 text-success" />
-                ) : (
-                  <Upload className="w-5 h-5 text-muted-foreground" />
-                )}
-                <span className="font-medium text-foreground">
-                  {proofUploaded ? 'Proof Recorded' : 'Upload Proof'}
-                </span>
+            <div className="p-4 rounded border border-border bg-muted/30">
+              <div className="flex items-center gap-2 mb-2">
+                <PenLine className="w-5 h-5 text-muted-foreground" />
+                <span className="font-medium text-foreground">Proof by Text</span>
               </div>
-
-              {proofUploaded ? (
-                <p className="text-sm text-success">
-                  {uploadedFileName || 'Proof uploaded successfully'}
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Upload proof to mark this as completed.
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="w-full"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Select Screenshot
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
+              <p className="text-xs text-muted-foreground">
+                This is personal. Be honest. This will be saved forever.
+              </p>
             </div>
 
-            {/* Section B: Reward Confirmation (shown after proof) */}
-            {proofUploaded && (
-              <div className="p-4 rounded border border-accent/30 bg-accent/5 animate-in fade-in slide-in-from-bottom-2">
-                <span className="data-label block mb-2">Your Reward</span>
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                  {reward.rewardTitle}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Enjoyment time: {reward.enjoymentTime}
-                </p>
+            {/* Question Block 1: Anchoring */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Yesterday was green.
+              </label>
+              <Textarea
+                value={anchorText}
+                onChange={(e) => setAnchorText(e.target.value)}
+                placeholder="Yes / No / Neutral — or your own words..."
+                className="min-h-[60px] bg-background border-border resize-none text-sm"
+              />
+            </div>
 
-                <Button
-                  onClick={handleClaim}
-                  disabled={isClaiming}
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  {isClaiming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Unlocking...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      You Earned This
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
+            {/* Question Block 2: Reflection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                What made this day different?
+              </label>
+              <Textarea
+                value={reflectionText}
+                onChange={(e) => setReflectionText(e.target.value)}
+                placeholder="Take your time. Write what feels true..."
+                className="min-h-[100px] bg-background border-border resize-none text-sm"
+              />
+            </div>
+
+            <Button
+              onClick={handleContinue}
+              disabled={!canContinue}
+              className="w-full"
+            >
+              Continue
+            </Button>
+          </div>
+        ) : (
+          /* Step 2: Confirmation */
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+            <div className="p-4 rounded border border-warning/30 bg-warning/5">
+              <p className="text-sm text-foreground leading-relaxed">
+                Once you unlock this vault, this proof will be saved permanently.
+                <br />
+                <span className="text-muted-foreground">You won't be able to edit or redo it.</span>
+              </p>
+            </div>
+
+            {/* Preview of what was written */}
+            <div className="p-4 bg-muted/30 rounded border border-border space-y-3">
+              <span className="data-label text-xs">Your Proof</span>
+              <p className="text-sm text-muted-foreground italic">"{anchorText}"</p>
+              <p className="text-sm text-foreground">{reflectionText}</p>
+            </div>
+
+            {/* Reward Preview */}
+            <div className="p-4 rounded border border-accent/30 bg-accent/5">
+              <span className="data-label block mb-2">Your Reward</span>
+              <h3 className="text-lg font-semibold text-foreground mb-1">
+                {reward.rewardTitle}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Enjoyment time: {reward.enjoymentTime}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting || isClaiming}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmUnlock}
+                disabled={isSubmitting || isClaiming}
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+              >
+                {isSubmitting || isClaiming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Unlocking...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Confirm & Unlock
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
