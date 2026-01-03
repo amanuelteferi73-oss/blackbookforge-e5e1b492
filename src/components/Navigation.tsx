@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { Home, CheckSquare, Lock, Image, BarChart3 } from 'lucide-react';
+import { Home, CheckSquare, Lock, Image, BarChart3, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'Dashboard' },
@@ -10,6 +11,8 @@ const NAV_ITEMS = [
 ];
 
 export function Navigation() {
+  const { signOut } = useAuth();
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border md:top-[73px] md:bottom-auto md:border-t-0 md:border-b">
       <div className="container mx-auto px-4">
@@ -30,6 +33,15 @@ export function Navigation() {
               <span className="text-[10px] md:text-sm">{label}</span>
             </NavLink>
           ))}
+          
+          {/* Logout Button */}
+          <button
+            onClick={signOut}
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-2 px-3 py-2 rounded transition-colors text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-[10px] md:text-sm">Logout</span>
+          </button>
         </div>
       </div>
     </nav>
