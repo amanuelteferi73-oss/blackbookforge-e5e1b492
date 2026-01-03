@@ -4,44 +4,64 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTodayKey } from '@/lib/timeEngine';
 import { 
   CHECK_IN_SECTIONS, 
-  TOTAL_POSSIBLE_POINTS,
+  getVisibleSections,
+  getTotalPossiblePoints,
   calculateCheckInScore,
   QuestionAnswer,
   CheckInResult,
+  FocusPillar,
+  FOCUS_PILLAR_OPTIONS,
 } from '@/lib/checkInSections';
 import { CheckInSection } from './CheckInSection';
+import { FocusPillarSelector } from './FocusPillarSelector';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+
+const PILLAR_ICONS = {
+  startup: Rocket,
+  cash: Briefcase,
+  school: GraduationCap,
+};
 
 export function EnforcementCheckIn() {
   const navigate = useNavigate();
   const [answers, setAnswers] = useState<Map<string, boolean>>(new Map());
+  const [focusPillar, setFocusPillar] = useState<FocusPillar>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [existingCheckIn, setExistingCheckIn] = useState<any>(null);
   const [failedItems, setFailedItems] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Get all questions count
+  // Get visible sections based on pillar
+  const visibleSections = useMemo(() => getVisibleSections(focusPillar), [focusPillar]);
+
+  // Get all questions count for visible sections
   const totalQuestions = useMemo(() => 
-    CHECK_IN_SECTIONS.reduce((sum, s) => sum + s.questions.length, 0),
-    []
+    visibleSections.reduce((sum, s) => sum + s.questions.length, 0),
+    [visibleSections]
   );
 
-  // Calculate current progress
-  const answeredCount = answers.size;
-  const progressPercent = (answeredCount / totalQuestions) * 100;
+  // Calculate current progress (only count answers for visible sections)
+  const answeredCount = useMemo(() => {
+    const visibleQuestionIds = new Set(
+      visibleSections.flatMap(s => s.questions.map(q => q.id))
+    );
+    return Array.from(answers.keys()).filter(id => visibleQuestionIds.has(id)).length;
+  }, [answers, visibleSections]);
+
+  const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
   // Calculate preview score
   const previewResult = useMemo<CheckInResult>(() => {
     const answerArray: QuestionAnswer[] = Array.from(answers.entries()).map(
       ([questionId, value]) => ({ questionId, value })
     );
-    return calculateCheckInScore(answerArray);
-  }, [answers]);
+    return calculateCheckInScore(answerArray, focusPillar);
+  }, [answers, focusPillar]);
 
   // Load user and existing check-in
   useEffect(() => {
@@ -65,6 +85,7 @@ export function EnforcementCheckIn() {
 
       if (checkIn) {
         setExistingCheckIn(checkIn);
+        setFocusPillar(checkIn.focus_pillar as FocusPillar);
         
         // Load failed items
         const { data: items } = await supabase
@@ -99,10 +120,22 @@ export function EnforcementCheckIn() {
     });
   };
 
+  // Check if form is complete (pillar selected + all visible questions answered)
+  const isFormComplete = focusPillar !== null && answeredCount >= totalQuestions;
+
   // Submit check-in
   const handleSubmit = async () => {
     if (!userId) {
       toast({ title: 'Not authenticated', variant: 'destructive' });
+      return;
+    }
+
+    if (!focusPillar) {
+      toast({ 
+        title: 'Select Focus Pillar', 
+        description: 'Choose your primary focus for today.',
+        variant: 'destructive' 
+      });
       return;
     }
 
@@ -122,9 +155,9 @@ export function EnforcementCheckIn() {
       const answerArray: QuestionAnswer[] = Array.from(answers.entries()).map(
         ([questionId, value]) => ({ questionId, value })
       );
-      const result = calculateCheckInScore(answerArray);
+      const result = calculateCheckInScore(answerArray, focusPillar);
 
-      // Create the check-in record
+      // Create the check-in record with focus_pillar
       const { data: checkIn, error: checkInError } = await supabase
         .from('daily_checkins')
         .insert({
@@ -134,6 +167,7 @@ export function EnforcementCheckIn() {
           discipline_breach: result.disciplineBreach,
           submitted_at: new Date().toISOString(),
           is_missed: false,
+          focus_pillar: focusPillar,
         })
         .select()
         .single();
@@ -193,6 +227,9 @@ export function EnforcementCheckIn() {
 
   // Already submitted - show read-only view
   if (existingCheckIn) {
+    const pillarOption = FOCUS_PILLAR_OPTIONS.find(p => p.value === existingCheckIn.focus_pillar);
+    const PillarIcon = existingCheckIn.focus_pillar ? PILLAR_ICONS[existingCheckIn.focus_pillar as keyof typeof PILLAR_ICONS] : null;
+
     return (
       <div className="space-y-6">
         {/* Locked Header */}
@@ -205,6 +242,19 @@ export function EnforcementCheckIn() {
             </p>
           </div>
         </div>
+
+        {/* Pillar Display */}
+        {pillarOption && PillarIcon && (
+          <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg border border-primary/30">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <PillarIcon className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Focus Pillar</p>
+              <p className="font-medium">{pillarOption.label}</p>
+            </div>
+          </div>
+        )}
 
         {/* Score Display */}
         <div className={cn(
@@ -277,14 +327,16 @@ export function EnforcementCheckIn() {
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">Daily Check-In</h1>
         <p className="text-sm text-muted-foreground">
-          Answer all {totalQuestions} questions • One submission per day
+          One day, one fight • Select your focus, answer honestly
         </p>
       </div>
 
       {/* Progress Bar */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-3 -mx-4 px-4 border-b">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span>{answeredCount} / {totalQuestions} answered</span>
+          <span>
+            {focusPillar ? `${answeredCount} / ${totalQuestions} answered` : 'Select focus pillar first'}
+          </span>
           <span className={cn(
             "font-bold",
             previewResult.percentage >= 80 && "text-primary",
@@ -297,9 +349,57 @@ export function EnforcementCheckIn() {
         <Progress value={progressPercent} className="h-2" />
       </div>
 
-      {/* Sections */}
+      {/* Fixed Sections A & B */}
       <div className="space-y-6">
-        {CHECK_IN_SECTIONS.map((section) => (
+        {visibleSections.filter(s => ['A', 'B'].includes(s.id)).map((section) => (
+          <CheckInSection
+            key={section.id}
+            section={section}
+            answers={answers}
+            onToggle={handleToggle}
+            isLocked={false}
+          />
+        ))}
+      </div>
+
+      {/* Core Sections E, F, G, H */}
+      <div className="space-y-6">
+        {visibleSections.filter(s => ['E', 'F', 'G', 'H'].includes(s.id)).map((section) => (
+          <CheckInSection
+            key={section.id}
+            section={section}
+            answers={answers}
+            onToggle={handleToggle}
+            isLocked={false}
+          />
+        ))}
+      </div>
+
+      {/* Focus Pillar Selector (Section X) */}
+      <FocusPillarSelector
+        value={focusPillar}
+        onChange={setFocusPillar}
+        isLocked={false}
+      />
+
+      {/* Pillar-Conditional Section (C, D, or S) */}
+      {focusPillar && (
+        <div className="space-y-6">
+          {visibleSections.filter(s => ['C', 'D', 'S'].includes(s.id)).map((section) => (
+            <CheckInSection
+              key={section.id}
+              section={section}
+              answers={answers}
+              onToggle={handleToggle}
+              isLocked={false}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Closing Section I */}
+      <div className="space-y-6">
+        {visibleSections.filter(s => s.id === 'I').map((section) => (
           <CheckInSection
             key={section.id}
             section={section}
@@ -315,6 +415,15 @@ export function EnforcementCheckIn() {
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Preview Score</span>
           <span className="text-2xl font-bold">{previewResult.percentage}%</span>
+        </div>
+        
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Points: {previewResult.totalScore} / {previewResult.maxScore}</span>
+          {focusPillar && (
+            <span className="text-primary">
+              {FOCUS_PILLAR_OPTIONS.find(p => p.value === focusPillar)?.label}
+            </span>
+          )}
         </div>
         
         {previewResult.disciplineBreach && (
@@ -334,7 +443,7 @@ export function EnforcementCheckIn() {
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={isSubmitting || answeredCount < totalQuestions}
+        disabled={isSubmitting || !isFormComplete}
         className="w-full h-12 text-lg"
       >
         {isSubmitting ? (
@@ -342,6 +451,8 @@ export function EnforcementCheckIn() {
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Submitting...
           </>
+        ) : !focusPillar ? (
+          'Select Focus Pillar First'
         ) : answeredCount < totalQuestions ? (
           `Answer ${totalQuestions - answeredCount} more questions`
         ) : (

@@ -1,5 +1,7 @@
 // Daily Check-In Sections Configuration
-// This is the IMMUTABLE truth structure - DO NOT MODIFY
+// This is the IMMUTABLE truth structure - DO NOT MODIFY QUESTION WORDING OR POINTS
+
+export type FocusPillar = 'startup' | 'cash' | 'school' | null;
 
 export interface CheckInQuestion {
   id: string;
@@ -15,9 +17,16 @@ export interface CheckInSection {
   isCritical?: boolean;
   isConditional?: boolean;
   scoringLogic?: 'standard' | 'percentage-tier';
+  // NEW: Pillar visibility control
+  pillarRequired?: FocusPillar; // Only visible when this pillar is selected
 }
 
+// FIXED SECTIONS - Always visible (A, B)
+// CORE SECTIONS - Always visible (E, F, G, H, I) - reordered to come before pillar
+// PILLAR-CONDITIONAL - C (cash), D (startup), S (school)
+
 export const CHECK_IN_SECTIONS: CheckInSection[] = [
+  // === FIXED SECTIONS (Always visible) ===
   {
     id: 'A',
     title: 'Morning Start & Integrity',
@@ -38,27 +47,8 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
       { id: 'B3', text: 'Did you hydrate sufficiently?', points: 3 },
     ],
   },
-  {
-    id: 'C',
-    title: 'Cash Engine Actions',
-    maxPoints: 20,
-    questions: [
-      { id: 'C1', text: 'Outward-facing cash action performed?', points: 5 },
-      { id: 'C2', text: 'At least one risky/rejection-possible action?', points: 5 },
-      { id: 'C3', text: 'Follow-up with a real person?', points: 5 },
-      { id: 'C4', text: 'Shipped or showed before perfecting?', points: 5 },
-    ],
-  },
-  {
-    id: 'D',
-    title: 'Startup / Identity Engine',
-    maxPoints: 15,
-    questions: [
-      { id: 'D1', text: 'Exposed startup/project to a real person?', points: 5 },
-      { id: 'D2', text: 'Asked for feedback (not validation)?', points: 5 },
-      { id: 'D3', text: 'Logged a signal (interest / confusion / rejection / silence)?', points: 5 },
-    ],
-  },
+
+  // === CORE SECTIONS (Always visible, reordered) ===
   {
     id: 'E',
     title: 'Speed & Fear Check',
@@ -101,6 +91,45 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
       { id: 'H5', text: 'Logged honestly?', points: 4 },
     ],
   },
+
+  // === PILLAR-CONDITIONAL SECTIONS ===
+  {
+    id: 'C',
+    title: 'Cash Engine Actions',
+    maxPoints: 20,
+    pillarRequired: 'cash',
+    questions: [
+      { id: 'C1', text: 'Outward-facing cash action performed?', points: 5 },
+      { id: 'C2', text: 'At least one risky/rejection-possible action?', points: 5 },
+      { id: 'C3', text: 'Follow-up with a real person?', points: 5 },
+      { id: 'C4', text: 'Shipped or showed before perfecting?', points: 5 },
+    ],
+  },
+  {
+    id: 'D',
+    title: 'Startup / Identity Engine',
+    maxPoints: 15,
+    pillarRequired: 'startup',
+    questions: [
+      { id: 'D1', text: 'Exposed startup/project to a real person?', points: 5 },
+      { id: 'D2', text: 'Asked for feedback (not validation)?', points: 5 },
+      { id: 'D3', text: 'Logged a signal (interest / confusion / rejection / silence)?', points: 5 },
+    ],
+  },
+  {
+    id: 'S',
+    title: 'School / Academic Execution',
+    maxPoints: 15,
+    pillarRequired: 'school',
+    questions: [
+      { id: 'S1', text: 'Attended required classes or sessions?', points: 4 },
+      { id: 'S2', text: 'Completed required academic work?', points: 4 },
+      { id: 'S3', text: 'Studied or read with intent (not passive)?', points: 4 },
+      { id: 'S4', text: 'Avoided distractions during school blocks?', points: 3 },
+    ],
+  },
+
+  // === CLOSING SECTION (Always visible) ===
   {
     id: 'I',
     title: 'Closing Honesty',
@@ -111,7 +140,24 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
   },
 ];
 
-// Calculate total possible points
+// Get sections visible for a given pillar
+export function getVisibleSections(pillar: FocusPillar): CheckInSection[] {
+  return CHECK_IN_SECTIONS.filter(section => {
+    // No pillar required = always visible
+    if (!section.pillarRequired) return true;
+    // Pillar required but none selected = hidden
+    if (!pillar) return false;
+    // Show only if pillar matches
+    return section.pillarRequired === pillar;
+  });
+}
+
+// Calculate total possible points for a pillar
+export function getTotalPossiblePoints(pillar: FocusPillar): number {
+  return getVisibleSections(pillar).reduce((sum, section) => sum + section.maxPoints, 0);
+}
+
+// Legacy: Total points when all sections visible (for compatibility)
 export const TOTAL_POSSIBLE_POINTS = CHECK_IN_SECTIONS.reduce(
   (sum, section) => sum + section.maxPoints,
   0
@@ -153,14 +199,19 @@ export interface CheckInResult {
   }[];
 }
 
-export function calculateCheckInScore(answers: QuestionAnswer[]): CheckInResult {
+// Updated score calculation that respects pillar visibility
+export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPillar = null): CheckInResult {
   const answerMap = new Map(answers.map(a => [a.questionId, a.value]));
   const failedItems: CheckInResult['failedItems'] = [];
   const sectionScores: CheckInResult['sectionScores'] = [];
   let totalScore = 0;
   let disciplineBreach = false;
 
-  for (const section of CHECK_IN_SECTIONS) {
+  // Only calculate for visible sections
+  const visibleSections = getVisibleSections(pillar);
+  const maxPossiblePoints = getTotalPossiblePoints(pillar);
+
+  for (const section of visibleSections) {
     let sectionEarned = 0;
 
     if (section.scoringLogic === 'percentage-tier') {
@@ -233,10 +284,17 @@ export function calculateCheckInScore(answers: QuestionAnswer[]): CheckInResult 
 
   return {
     totalScore: Math.round(totalScore),
-    maxScore: TOTAL_POSSIBLE_POINTS,
-    percentage: Math.round((totalScore / TOTAL_POSSIBLE_POINTS) * 100),
+    maxScore: maxPossiblePoints,
+    percentage: maxPossiblePoints > 0 ? Math.round((totalScore / maxPossiblePoints) * 100) : 0,
     disciplineBreach,
     failedItems,
     sectionScores,
   };
 }
+
+// Focus Pillar options for UI
+export const FOCUS_PILLAR_OPTIONS = [
+  { value: 'startup' as const, label: 'Startup / Product Building', description: 'Building, shipping, iterating' },
+  { value: 'cash' as const, label: 'Cash Flow / Client Acquisition', description: 'Revenue, sales, outreach' },
+  { value: 'school' as const, label: 'School / Academic Progress', description: 'Classes, study, assignments' },
+];
