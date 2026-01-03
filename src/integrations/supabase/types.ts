@@ -125,6 +125,7 @@ export type Database = {
           date: string
           discipline_breach: boolean
           failure_note: string | null
+          focus_pillar: string | null
           id: string
           is_missed: boolean
           submitted_at: string | null
@@ -136,6 +137,7 @@ export type Database = {
           date: string
           discipline_breach?: boolean
           failure_note?: string | null
+          focus_pillar?: string | null
           id?: string
           is_missed?: boolean
           submitted_at?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           date?: string
           discipline_breach?: boolean
           failure_note?: string | null
+          focus_pillar?: string | null
           id?: string
           is_missed?: boolean
           submitted_at?: string | null
