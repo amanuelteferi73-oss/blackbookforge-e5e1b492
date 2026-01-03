@@ -6,6 +6,13 @@ import past5 from '@/assets/past-self/past-5.jpg';
 import past6 from '@/assets/past-self/past-6.jpg';
 import past7 from '@/assets/past-self/past-7.jpg';
 import past8 from '@/assets/past-self/past-8.png';
+import past9 from '@/assets/past-self/past-9.jpg';
+import past10 from '@/assets/past-self/past-10.jpg';
+import past11 from '@/assets/past-self/past-11.png';
+import past12 from '@/assets/past-self/past-12.png';
+import past13 from '@/assets/past-self/past-13.png';
+import past14 from '@/assets/past-self/past-14.png';
+import past15 from '@/assets/past-self/past-15.png';
 
 const PAST_SELF_IMAGES = [
   { src: past1, alt: 'Past self - moment 1' },
@@ -16,6 +23,13 @@ const PAST_SELF_IMAGES = [
   { src: past6, alt: 'Past self - moment 6' },
   { src: past7, alt: 'Past self - moment 7' },
   { src: past8, alt: 'Past self - moment 8' },
+  { src: past9, alt: 'Past self - moment 9' },
+  { src: past10, alt: 'Past self - moment 10' },
+  { src: past11, alt: 'Past self - moment 11' },
+  { src: past12, alt: 'Past self - moment 12' },
+  { src: past13, alt: 'Past self - moment 13' },
+  { src: past14, alt: 'Past self - moment 14' },
+  { src: past15, alt: 'Past self - moment 15' },
 ];
 
 export function PastSelfGallery() {
