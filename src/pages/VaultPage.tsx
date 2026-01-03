@@ -7,7 +7,7 @@ import { ProofUploadModal } from '@/components/vault/ProofUploadModal';
 import { LegacyLock } from '@/components/LegacyLock';
 
 export default function VaultPage() {
-  const { assets, isLoading, uploadProof, claimReward, getAssetState } = useVaultAssets();
+  const { assets, isLoading, submitProof, claimReward, getAssetState } = useVaultAssets();
   const [selectedReward, setSelectedReward] = useState<VaultReward | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -97,7 +97,7 @@ export default function VaultPage() {
         state={selectedReward ? getAssetState(selectedReward.id) : null}
         open={modalOpen}
         onClose={handleCloseModal}
-        onUploadProof={uploadProof}
+        onSubmitProof={submitProof}
         onClaimReward={claimReward}
       />
     </div>

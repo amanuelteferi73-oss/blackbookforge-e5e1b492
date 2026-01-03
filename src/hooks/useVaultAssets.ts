@@ -7,13 +7,14 @@ export interface VaultAssetState {
   isUnlocked: boolean;
   proofUploaded: boolean;
   unlockedAt: string | null;
-  proofPath: string | null;
+  proofText: string | null;
+  proofReflection: string | null;
 }
 
 export interface UseVaultAssetsResult {
   assets: Map<number, VaultAssetState>;
   isLoading: boolean;
-  uploadProof: (rewardId: number, file: File) => Promise<boolean>;
+  submitProof: (rewardId: number, anchorText: string, reflectionText: string) => Promise<boolean>;
   claimReward: (rewardId: number) => Promise<boolean>;
   getAssetState: (rewardId: number) => VaultAssetState;
   refresh: () => Promise<void>;
@@ -56,7 +57,8 @@ export function useVaultAssets(): UseVaultAssetsResult {
           isUnlocked: false,
           proofUploaded: false,
           unlockedAt: null,
-          proofPath: null,
+          proofText: null,
+          proofReflection: null,
         });
       });
 
@@ -65,12 +67,25 @@ export function useVaultAssets(): UseVaultAssetsResult {
         const rewardId = parseInt(asset.name || '0', 10);
         if (rewardId > 0) {
           const unlockStatus = asset.asset_unlock_status;
+          // Parse content as JSON to extract proof text fields
+          let proofText = null;
+          let proofReflection = null;
+          if (asset.content) {
+            try {
+              const parsed = JSON.parse(asset.content);
+              proofText = parsed.anchorText || null;
+              proofReflection = parsed.reflectionText || null;
+            } catch {
+              // If not JSON, content is just the title (old format)
+            }
+          }
           assetMap.set(rewardId, {
             rewardId,
             isUnlocked: !!unlockStatus,
-            proofUploaded: !!asset.file_path,
+            proofUploaded: !!asset.content && (proofText !== null || asset.file_path !== null),
             unlockedAt: unlockStatus?.unlocked_at || null,
-            proofPath: asset.file_path,
+            proofText,
+            proofReflection,
           });
         }
       });
@@ -87,7 +102,7 @@ export function useVaultAssets(): UseVaultAssetsResult {
     loadAssets();
   }, [loadAssets]);
 
-  const uploadProof = async (rewardId: number, file: File): Promise<boolean> => {
+  const submitProof = async (rewardId: number, anchorText: string, reflectionText: string): Promise<boolean> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
@@ -95,18 +110,13 @@ export function useVaultAssets(): UseVaultAssetsResult {
       const reward = VAULT_REWARDS.find(r => r.id === rewardId);
       if (!reward) return false;
 
-      // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/proofs/reward-${rewardId}-${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('vault-proofs')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        // If bucket doesn't exist, we'll store without file
-      }
+      // Store proof text as JSON in content field
+      const proofContent = JSON.stringify({
+        anchorText,
+        reflectionText,
+        submittedAt: new Date().toISOString(),
+        rewardTitle: reward.title,
+      });
 
       // Check if asset record already exists
       const { data: existingAsset } = await supabase
@@ -121,7 +131,7 @@ export function useVaultAssets(): UseVaultAssetsResult {
         // Update existing asset
         await supabase
           .from('assets')
-          .update({ file_path: filePath })
+          .update({ content: proofContent })
           .eq('id', existingAsset.id);
       } else {
         // Create new asset record
@@ -130,10 +140,9 @@ export function useVaultAssets(): UseVaultAssetsResult {
           .insert({
             user_id: user.id,
             category: 'reward',
-            type: 'image',
+            type: 'message',
             name: rewardId.toString(),
-            file_path: filePath,
-            content: reward.title,
+            content: proofContent,
           });
       }
 
@@ -145,19 +154,21 @@ export function useVaultAssets(): UseVaultAssetsResult {
           isUnlocked: false,
           proofUploaded: false,
           unlockedAt: null,
-          proofPath: null,
+          proofText: null,
+          proofReflection: null,
         };
         newMap.set(rewardId, {
           ...current,
           proofUploaded: true,
-          proofPath: filePath,
+          proofText: anchorText,
+          proofReflection: reflectionText,
         });
         return newMap;
       });
 
       return true;
     } catch (err) {
-      console.error('Error uploading proof:', err);
+      console.error('Error submitting proof:', err);
       return false;
     }
   };
@@ -186,7 +197,7 @@ export function useVaultAssets(): UseVaultAssetsResult {
         .from('asset_unlock_status')
         .insert({
           asset_id: asset.id,
-          unlock_reason: 'Manual proof verification',
+          unlock_reason: 'Text proof submitted',
         });
 
       if (unlockError) {
@@ -221,14 +232,15 @@ export function useVaultAssets(): UseVaultAssetsResult {
       isUnlocked: false,
       proofUploaded: false,
       unlockedAt: null,
-      proofPath: null,
+      proofText: null,
+      proofReflection: null,
     };
   };
 
   return {
     assets,
     isLoading,
-    uploadProof,
+    submitProof,
     claimReward,
     getAssetState,
     refresh: loadAssets,
