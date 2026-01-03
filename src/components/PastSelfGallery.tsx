@@ -19,6 +19,16 @@ import past18 from '@/assets/past-self/past-18.jpg';
 import past19 from '@/assets/past-self/past-19.png';
 import past20 from '@/assets/past-self/past-20.jpg';
 import past21 from '@/assets/past-self/past-21.jpg';
+import past22 from '@/assets/past-self/past-22.jpg';
+import past23 from '@/assets/past-self/past-23.jpg';
+import past24 from '@/assets/past-self/past-24.jpg';
+import past25 from '@/assets/past-self/past-25.jpg';
+import past26 from '@/assets/past-self/past-26.jpg';
+import past27 from '@/assets/past-self/past-27.jpg';
+import past28 from '@/assets/past-self/past-28.jpg';
+import past29 from '@/assets/past-self/past-29.jpg';
+import past30 from '@/assets/past-self/past-30.jpg';
+import past31 from '@/assets/past-self/past-31.png';
 import { useUserGalleryImages } from '@/hooks/useUserGalleryImages';
 import { GalleryUploadButton } from '@/components/gallery/GalleryUploadButton';
 
@@ -44,6 +54,16 @@ const PAST_SELF_IMAGES = [
   { src: past19, alt: 'Past self - moment 19' },
   { src: past20, alt: 'Past self - moment 20' },
   { src: past21, alt: 'Past self - moment 21' },
+  { src: past22, alt: 'Past self - moment 22' },
+  { src: past23, alt: 'Past self - moment 23' },
+  { src: past24, alt: 'Past self - moment 24' },
+  { src: past25, alt: 'Past self - moment 25' },
+  { src: past26, alt: 'Past self - moment 26' },
+  { src: past27, alt: 'Past self - moment 27' },
+  { src: past28, alt: 'Past self - moment 28' },
+  { src: past29, alt: 'Past self - moment 29' },
+  { src: past30, alt: 'Past self - moment 30' },
+  { src: past31, alt: 'Past self - moment 31' },
 ];
 
 export function PastSelfGallery() {
