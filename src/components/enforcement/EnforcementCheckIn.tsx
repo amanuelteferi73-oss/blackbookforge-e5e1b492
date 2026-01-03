@@ -12,8 +12,10 @@ import {
   FocusPillar,
   FOCUS_PILLAR_OPTIONS,
 } from '@/lib/checkInSections';
+import { PUNISHMENT_THRESHOLD } from '@/lib/punishments';
 import { CheckInSection } from './CheckInSection';
 import { FocusPillarSelector } from './FocusPillarSelector';
+import { PunishmentFlow } from '@/components/punishment/PunishmentFlow';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap } from 'lucide-react';
@@ -35,6 +37,13 @@ export function EnforcementCheckIn() {
   const [existingCheckIn, setExistingCheckIn] = useState<any>(null);
   const [failedItems, setFailedItems] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showPunishmentFlow, setShowPunishmentFlow] = useState(false);
+  const [punishmentData, setPunishmentData] = useState<{
+    checkInId: string;
+    score: number;
+    failedQuestions: string[];
+    date: string;
+  } | null>(null);
 
   // Get visible sections based on pillar
   const visibleSections = useMemo(() => getVisibleSections(focusPillar), [focusPillar]);
@@ -94,6 +103,26 @@ export function EnforcementCheckIn() {
           .eq('daily_checkin_id', checkIn.id);
         
         setFailedItems(items || []);
+        
+        // Check if punishment flow should be shown (score <= threshold and no resolved punishment)
+        if (checkIn.total_score <= PUNISHMENT_THRESHOLD) {
+          const { data: punishment } = await supabase
+            .from('punishments')
+            .select('*')
+            .eq('daily_checkin_id', checkIn.id)
+            .maybeSingle();
+          
+          // Show punishment flow if no punishment exists or punishment is unresolved
+          if (!punishment || !punishment.is_resolved) {
+            setPunishmentData({
+              checkInId: checkIn.id,
+              score: checkIn.total_score,
+              failedQuestions: (items || []).map((i: any) => i.question_text),
+              date: todayKey,
+            });
+            setShowPunishmentFlow(true);
+          }
+        }
       }
 
       setIsLoading(false);
@@ -191,10 +220,27 @@ export function EnforcementCheckIn() {
         if (failedError) throw failedError;
       }
 
-      toast({ 
-        title: 'Check-in submitted', 
-        description: `Score: ${result.percentage}%` 
-      });
+      // Check if punishment flow should trigger
+      if (result.percentage <= PUNISHMENT_THRESHOLD) {
+        toast({ 
+          title: 'Check-in submitted', 
+          description: `Score: ${result.percentage}% — Punishment required.`,
+          variant: 'destructive'
+        });
+        
+        setPunishmentData({
+          checkInId: checkIn.id,
+          score: result.percentage,
+          failedQuestions: result.failedItems.map(item => item.questionText),
+          date: todayKey,
+        });
+        setShowPunishmentFlow(true);
+      } else {
+        toast({ 
+          title: 'Check-in submitted', 
+          description: `Score: ${result.percentage}%` 
+        });
+      }
 
       setExistingCheckIn(checkIn);
       setFailedItems(result.failedItems.map(item => ({
@@ -215,6 +261,19 @@ export function EnforcementCheckIn() {
       setIsSubmitting(false);
     }
   };
+
+  // Punishment flow - takes over the entire view
+  if (showPunishmentFlow && punishmentData && userId) {
+    return (
+      <PunishmentFlow
+        checkInId={punishmentData.checkInId}
+        score={punishmentData.score}
+        failedQuestions={punishmentData.failedQuestions}
+        date={punishmentData.date}
+        userId={userId}
+      />
+    );
+  }
 
   // Loading state
   if (isLoading) {

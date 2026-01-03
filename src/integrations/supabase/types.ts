@@ -343,6 +343,69 @@ export type Database = {
         }
         Relationships: []
       }
+      punishments: {
+        Row: {
+          created_at: string
+          daily_checkin_id: string
+          date: string
+          failed_questions: Json
+          id: string
+          is_resolved: boolean
+          proof_commitment: string | null
+          proof_feeling: string | null
+          proof_submitted_at: string | null
+          punishment_index: number
+          punishment_text: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_checkin_id: string
+          date: string
+          failed_questions?: Json
+          id?: string
+          is_resolved?: boolean
+          proof_commitment?: string | null
+          proof_feeling?: string | null
+          proof_submitted_at?: string | null
+          punishment_index: number
+          punishment_text: string
+          score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_checkin_id?: string
+          date?: string
+          failed_questions?: Json
+          id?: string
+          is_resolved?: boolean
+          proof_commitment?: string | null
+          proof_feeling?: string | null
+          proof_submitted_at?: string | null
+          punishment_index?: number
+          punishment_text?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "punishments_daily_checkin_id_fkey"
+            columns: ["daily_checkin_id"]
+            isOneToOne: false
+            referencedRelation: "daily_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punishments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       streaks: {
         Row: {
           created_at: string
