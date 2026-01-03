@@ -1,5 +1,6 @@
 import { CoreStatement } from '@/components/CoreStatement';
 import { StatusPanel } from '@/components/StatusPanel';
+import { FutureSelfGallery } from '@/components/FutureSelfGallery';
 import { PastSelfGallery } from '@/components/PastSelfGallery';
 import { VaultPreview } from '@/components/VaultPreview';
 import { LegacyLock } from '@/components/LegacyLock';
@@ -14,6 +15,9 @@ const Index = () => {
       <div className="container mx-auto px-4 mt-6">
         {/* Status Panel */}
         <StatusPanel />
+
+        {/* Vision State - Future Self */}
+        <FutureSelfGallery />
 
         {/* Reality State - Past Self */}
         <PastSelfGallery />
