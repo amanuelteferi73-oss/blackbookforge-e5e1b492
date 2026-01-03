@@ -6,7 +6,7 @@ import { LegacyLock } from '@/components/LegacyLock';
 
 const Index = () => {
   return (
-    <div className="min-h-screen pb-20 md:pb-0">
+    <div className="min-h-screen pb-20 md:pb-0 pt-40 md:pt-24">
       {/* Core Statement */}
       <CoreStatement />
 
