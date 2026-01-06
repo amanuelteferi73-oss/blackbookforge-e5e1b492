@@ -128,6 +128,7 @@ export type Database = {
           focus_pillar: string | null
           id: string
           is_missed: boolean
+          selected_pillars: Json | null
           submitted_at: string | null
           total_score: number
           user_id: string
@@ -140,6 +141,7 @@ export type Database = {
           focus_pillar?: string | null
           id?: string
           is_missed?: boolean
+          selected_pillars?: Json | null
           submitted_at?: string | null
           total_score?: number
           user_id: string
@@ -152,6 +154,7 @@ export type Database = {
           focus_pillar?: string | null
           id?: string
           is_missed?: boolean
+          selected_pillars?: Json | null
           submitted_at?: string | null
           total_score?: number
           user_id?: string
