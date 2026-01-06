@@ -42,8 +42,8 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
     maxPoints: 10,
     questions: [
       { id: 'A1', text: 'Did you get out of bed immediately at your planned wake-up time?', points: 4 },
-      { id: 'A2', text: 'Did you expose yourself to light within 30 minutes of waking?', points: 3 },
-      { id: 'A3', text: 'Did you start your first task without touching your phone or social media?', points: 3 },
+      { id: 'A2', text: 'Did you touch the future?', points: 3 },
+      { id: 'A3', text: 'Did you start your first task without touching your phone(unless recording progress) or social media?', points: 3 },
     ],
   },
   {
@@ -70,11 +70,11 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
   {
     id: 'F',
     title: 'Discipline Locks',
-    maxPoints: 15,
+    maxPoints: 14,
     isCritical: true,
     questions: [
-      { id: 'F1', text: 'Fully complied with all binary discipline rules?', points: 7.5 },
-      { id: 'F2', text: 'Shut down temptations immediately?', points: 7.5 },
+      { id: 'F1', text: 'Fully complied with all binary discipline rules?', points: 8 },
+      { id: 'F2', text: 'Shut down temptations immediately?', points: 6 },
     ],
   },
   {
