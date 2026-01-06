@@ -40,7 +40,7 @@ const App = () => (
                     <TimeDisplay />
                     
                     {/* Main Content with padding for fixed headers */}
-                    <main className="pt-[73px] md:pt-[121px] pb-[72px] md:pb-0">
+                    <main className="pt-[73px] md:pt-[208px] pb-[72px] md:pb-0">
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/check-in" element={<CheckInPage />} />

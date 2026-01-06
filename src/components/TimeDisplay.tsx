@@ -121,7 +121,7 @@ export function TimeDisplay() {
         </div>
 
         {/* Desktop Layout: Side by Side */}
-        <div className="hidden md:flex items-center justify-between py-3">
+        <div className="hidden md:flex items-center justify-between py-4">
           {/* Left: Elapsed (Count-Up) */}
           <div className="flex flex-col items-start min-w-0">
             <span className="data-label text-xs uppercase tracking-wider text-muted-foreground">
