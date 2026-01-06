@@ -32,16 +32,19 @@ export function PunishmentFlow({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingPunishment, setExistingPunishment] = useState<any>(null);
 
-  // Check for existing punishment on mount
+  // Check for existing punishment on mount - query by user_id + date for reliability
   useEffect(() => {
     const checkExisting = async () => {
+      // Query by user_id and date for more reliable lookup
       const { data } = await supabase
         .from('punishments')
         .select('*')
-        .eq('daily_checkin_id', checkInId)
+        .eq('user_id', userId)
+        .eq('date', date)
         .maybeSingle();
 
       if (data) {
+        console.log('[PunishmentFlow] Found existing punishment for date:', date);
         setExistingPunishment(data);
         setPunishment({ index: data.punishment_index, text: data.punishment_text });
         
@@ -50,11 +53,13 @@ export function PunishmentFlow({
         } else {
           setPhase('proof');
         }
+      } else {
+        console.log('[PunishmentFlow] No existing punishment for date:', date, '- showing wheel');
       }
     };
 
     checkExisting();
-  }, [checkInId]);
+  }, [userId, date]);
 
   const handlePunishmentSelected = async (index: number, text: string) => {
     setPunishment({ index, text });
