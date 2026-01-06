@@ -6,7 +6,7 @@ interface GalleryUploadButtonProps {
   section: 'reality' | 'vision';
   isUploading: boolean;
   onUpload: (file: File) => Promise<boolean>;
-  imageIndex: number;
+  mediaIndex: number;
 }
 
 // Compress and crop image to square aspect ratio
@@ -51,7 +51,21 @@ async function processImage(file: File): Promise<File> {
   });
 }
 
-export function GalleryUploadButton({ section, isUploading, onUpload, imageIndex }: GalleryUploadButtonProps) {
+// File size limits in MB
+const SIZE_LIMITS = {
+  image: 10,
+  audio: 25,
+  video: 50,
+};
+
+function getMediaType(file: File): 'image' | 'audio' | 'video' | null {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('audio/')) return 'audio';
+  if (file.type.startsWith('video/')) return 'video';
+  return null;
+}
+
+export function GalleryUploadButton({ section, isUploading, onUpload, mediaIndex }: GalleryUploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
 
@@ -67,46 +81,51 @@ export function GalleryUploadButton({ section, isUploading, onUpload, imageIndex
     e.target.value = '';
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    const mediaType = getMediaType(file);
+    if (!mediaType) {
+      toast.error('Please select an image, audio, or video file');
       return;
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image too large. Maximum size is 10MB');
+    // Validate file size based on type
+    const maxSize = SIZE_LIMITS[mediaType] * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} too large. Maximum size is ${SIZE_LIMITS[mediaType]}MB`);
       return;
     }
 
     try {
       setProcessing(true);
-      const processedFile = await processImage(file);
-      const success = await onUpload(processedFile);
+      
+      // Only process images (compress/crop), pass audio/video as-is
+      let fileToUpload = file;
+      if (mediaType === 'image') {
+        fileToUpload = await processImage(file);
+      }
+      
+      const success = await onUpload(fileToUpload);
       
       if (success) {
-        toast.success('Image uploaded');
+        toast.success(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} uploaded`);
       } else {
         toast.error('Upload failed');
       }
     } catch (err) {
       console.error('Processing error:', err);
-      toast.error('Failed to process image');
+      toast.error('Failed to process file');
     } finally {
       setProcessing(false);
     }
   };
 
   const isWorking = isUploading || processing;
-  const label = section === 'reality' 
-    ? 'Upload your reality image' 
-    : 'Upload your vision image';
 
   return (
     <div className="relative aspect-square overflow-hidden rounded bg-muted/30 border border-dashed border-border group">
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,audio/*,video/*"
         onChange={handleFileChange}
         className="hidden"
         disabled={isWorking}
@@ -123,14 +142,14 @@ export function GalleryUploadButton({ section, isUploading, onUpload, imageIndex
           <Plus className="w-6 h-6 text-muted-foreground group-hover:text-foreground transition-colors" />
         )}
         <span className="text-[10px] text-muted-foreground text-center leading-tight group-hover:text-foreground transition-colors">
-          {isWorking ? 'Uploading...' : label}
+          {isWorking ? 'Uploading...' : 'Add media'}
         </span>
       </button>
 
-      {/* Number badge matching existing images */}
+      {/* Number badge matching existing items */}
       <div className="absolute bottom-2 left-2">
         <span className="font-mono text-[10px] text-muted-foreground">
-          #{(imageIndex + 1).toString().padStart(2, '0')}
+          #{(mediaIndex + 1).toString().padStart(2, '0')}
         </span>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import past1 from '@/assets/past-self/past-1.jpg';
 import past2 from '@/assets/past-self/past-2.jpg';
 import past3 from '@/assets/past-self/past-3.jpg';
@@ -29,8 +30,10 @@ import past28 from '@/assets/past-self/past-28.jpg';
 import past29 from '@/assets/past-self/past-29.jpg';
 import past30 from '@/assets/past-self/past-30.jpg';
 import past31 from '@/assets/past-self/past-31.png';
-import { useUserGalleryImages } from '@/hooks/useUserGalleryImages';
+import { useUserGalleryMedia, type UserGalleryMedia } from '@/hooks/useUserGalleryMedia';
 import { GalleryUploadButton } from '@/components/gallery/GalleryUploadButton';
+import { MediaCard } from '@/components/gallery/MediaCard';
+import { MediaPlayerModal } from '@/components/gallery/MediaPlayerModal';
 
 const PAST_SELF_IMAGES = [
   { src: past1, alt: 'Past self - moment 1' },
@@ -67,10 +70,12 @@ const PAST_SELF_IMAGES = [
 ];
 
 export function PastSelfGallery() {
-  const { images: userImages, isUploading, uploadImage } = useUserGalleryImages('past');
+  const { media: userMedia, isUploading, uploadMedia } = useUserGalleryMedia('past');
+  const [selectedMedia, setSelectedMedia] = useState<UserGalleryMedia | null>(null);
+  const [selectedSystemImage, setSelectedSystemImage] = useState<string | null>(null);
   
   const totalSystemImages = PAST_SELF_IMAGES.length;
-  const totalImages = totalSystemImages + userImages.length;
+  const totalItems = totalSystemImages + userMedia.length;
 
   return (
     <section className="py-8">
@@ -88,7 +93,8 @@ export function PastSelfGallery() {
         {PAST_SELF_IMAGES.map((image, index) => (
           <div 
             key={`system-${index}`}
-            className="relative aspect-square overflow-hidden rounded bg-muted border border-border group"
+            className="relative aspect-square overflow-hidden rounded bg-muted border border-border group cursor-pointer"
+            onClick={() => setSelectedSystemImage(image.src)}
           >
             <img
               src={image.src}
@@ -104,34 +110,44 @@ export function PastSelfGallery() {
           </div>
         ))}
 
-        {/* User uploaded images */}
-        {userImages.map((image, index) => (
-          <div 
-            key={image.id}
-            className="relative aspect-square overflow-hidden rounded bg-muted border border-border group"
-          >
-            <img
-              src={image.url}
-              alt={`User reality - ${index + 1}`}
-              className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-60" />
-            <div className="absolute bottom-2 left-2">
-              <span className="font-mono text-[10px] text-muted-foreground">
-                #{(totalSystemImages + index + 1).toString().padStart(2, '0')}
-              </span>
-            </div>
-          </div>
+        {/* User uploaded media */}
+        {userMedia.map((item, index) => (
+          <MediaCard
+            key={item.id}
+            url={item.url}
+            type={item.type}
+            index={totalSystemImages + index}
+            onClick={() => setSelectedMedia(item)}
+            variant="past"
+          />
         ))}
 
         {/* Upload button at the end */}
         <GalleryUploadButton
           section="reality"
           isUploading={isUploading}
-          onUpload={uploadImage}
-          imageIndex={totalImages}
+          onUpload={uploadMedia}
+          mediaIndex={totalItems}
         />
       </div>
+
+      {/* Media player modal for user media */}
+      {selectedMedia && (
+        <MediaPlayerModal
+          url={selectedMedia.url}
+          type={selectedMedia.type}
+          onClose={() => setSelectedMedia(null)}
+        />
+      )}
+
+      {/* Image modal for system images */}
+      {selectedSystemImage && (
+        <MediaPlayerModal
+          url={selectedSystemImage}
+          type="image"
+          onClose={() => setSelectedSystemImage(null)}
+        />
+      )}
     </section>
   );
 }
