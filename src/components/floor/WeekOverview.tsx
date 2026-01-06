@@ -4,12 +4,14 @@ import { Target, Layers, CheckCircle, FileText } from 'lucide-react';
 // Week titles for display
 const WEEK_TITLES: Record<number, string> = {
   1: 'FOUNDATION & PROOF OF MOTION',
-  2: 'PRESSURE, CLARITY & COMMITMENT'
+  2: 'PRESSURE, CLARITY & COMMITMENT',
+  3: 'DEEP BUILD & SYSTEM CONSTRUCTION'
 };
 
 // Week summaries (displayed at bottom)
 const WEEK_SUMMARIES: Record<number, string> = {
-  2: "You stopped fantasizing and started deciding.\nYou felt pressure and didn't escape.\nThe startup now exists on paper, not just in your head.\nCash activity continued without hijacking focus.\n\nThis week separates dreamers from builders."
+  2: "You stopped fantasizing and started deciding.\nYou felt pressure and didn't escape.\nThe startup now exists on paper, not just in your head.\nCash activity continued without hijacking focus.\n\nThis week separates dreamers from builders.",
+  3: "You did not chase validation.\nYou did not rush exposure.\nYou built something wide, real, and heavy.\nYou preserved credits intelligently."
 };
 
 interface WeekOverviewProps {

@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils';
 // Week titles for display
 const WEEK_TITLES: Record<number, string> = {
   1: 'Foundation & Proof of Motion',
-  2: 'Pressure, Clarity & Commitment'
+  2: 'Pressure, Clarity & Commitment',
+  3: 'Deep Build & System Construction'
 };
 
 interface WeekSelectorProps {
@@ -41,7 +42,7 @@ export function WeekSelector({ weeks, selectedWeek, onSelectWeek }: WeekSelector
         ))}
         
         {/* Placeholder for future weeks */}
-        {[3, 4].filter(n => !weeks.find(w => w.week_number === n)).map((weekNum) => (
+        {[4].filter(n => !weeks.find(w => w.week_number === n)).map((weekNum) => (
           <div
             key={`placeholder-${weekNum}`}
             className="px-6 py-4 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground/50 font-mono text-sm cursor-not-allowed"

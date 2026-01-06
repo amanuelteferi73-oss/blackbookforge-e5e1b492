@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { WEEK_1_DATA } from '@/lib/floorWeek1Data';
 import { WEEK_2_DATA } from '@/lib/floorWeek2Data';
+import { WEEK_3_DATA } from '@/lib/floorWeek3Data';
 
 export interface FloorDay {
   id: string;
@@ -35,7 +36,7 @@ export interface FloorTimer {
 }
 
 // All week data for initialization
-const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA];
+const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA, WEEK_3_DATA];
 
 export function useFloor() {
   const { user } = useAuth();
