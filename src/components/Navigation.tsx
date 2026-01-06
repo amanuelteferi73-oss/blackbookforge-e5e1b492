@@ -15,7 +15,7 @@ export function Navigation() {
   const { signOut } = useAuth();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border md:top-[73px] md:bottom-auto md:border-t-0 md:border-b">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border md:top-[160px] md:bottom-auto md:border-t-0 md:border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-around md:justify-center md:gap-8 py-2">
           {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
