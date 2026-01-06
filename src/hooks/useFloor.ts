@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { WEEK_1_DATA } from '@/lib/floorWeek1Data';
+import { WEEK_2_DATA } from '@/lib/floorWeek2Data';
 
 export interface FloorDay {
   id: string;
@@ -33,61 +34,66 @@ export interface FloorTimer {
   is_active: boolean;
 }
 
+// All week data for initialization
+const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA];
+
 export function useFloor() {
   const { user } = useAuth();
   const [weeks, setWeeks] = useState<FloorWeek[]>([]);
   const [timers, setTimers] = useState<Record<string, FloorTimer>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize Week 1 data for user if not exists
-  const initializeWeek1 = async () => {
+  // Initialize all weeks data for user if not exists
+  const initializeWeeks = async () => {
     if (!user) return;
 
-    // Check if week 1 exists
-    const { data: existingWeek } = await supabase
-      .from('floor_weeks')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('week_number', 1)
-      .single();
+    for (const weekData of ALL_WEEKS) {
+      // Check if this week exists
+      const { data: existingWeek } = await supabase
+        .from('floor_weeks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('week_number', weekData.weekNumber)
+        .single();
 
-    if (existingWeek) return;
+      if (existingWeek) continue;
 
-    // Create week 1
-    const { data: newWeek, error: weekError } = await supabase
-      .from('floor_weeks')
-      .insert({
-        user_id: user.id,
-        week_number: WEEK_1_DATA.weekNumber,
-        objective: WEEK_1_DATA.objective,
-        focus_split: WEEK_1_DATA.focusSplit,
-        success_condition: WEEK_1_DATA.successCondition
-      })
-      .select()
-      .single();
+      // Create the week
+      const { data: newWeek, error: weekError } = await supabase
+        .from('floor_weeks')
+        .insert({
+          user_id: user.id,
+          week_number: weekData.weekNumber,
+          objective: weekData.objective,
+          focus_split: weekData.focusSplit,
+          success_condition: weekData.successCondition
+        })
+        .select()
+        .single();
 
-    if (weekError || !newWeek) {
-      console.error('Failed to create week 1:', weekError);
-      return;
-    }
+      if (weekError || !newWeek) {
+        console.error(`Failed to create week ${weekData.weekNumber}:`, weekError);
+        continue;
+      }
 
-    // Create all days for week 1
-    const daysToInsert = WEEK_1_DATA.days.map(day => ({
-      week_id: newWeek.id,
-      day_number: day.dayNumber,
-      title: day.title,
-      intent: day.intent,
-      actions: day.actions,
-      rules: day.rules,
-      unlock_text: day.unlockText
-    }));
+      // Create all days for this week
+      const daysToInsert = weekData.days.map(day => ({
+        week_id: newWeek.id,
+        day_number: day.dayNumber,
+        title: day.title,
+        intent: day.intent,
+        actions: day.actions,
+        rules: day.rules,
+        unlock_text: day.unlockText
+      }));
 
-    const { error: daysError } = await supabase
-      .from('floor_days')
-      .insert(daysToInsert);
+      const { error: daysError } = await supabase
+        .from('floor_days')
+        .insert(daysToInsert);
 
-    if (daysError) {
-      console.error('Failed to create days:', daysError);
+      if (daysError) {
+        console.error(`Failed to create days for week ${weekData.weekNumber}:`, daysError);
+      }
     }
   };
 
@@ -189,7 +195,7 @@ export function useFloor() {
         setIsLoading(false);
         return;
       }
-      await initializeWeek1();
+      await initializeWeeks();
       await fetchFloorData();
     };
     init();

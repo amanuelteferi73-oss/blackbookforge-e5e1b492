@@ -1,6 +1,12 @@
 import { FloorWeek } from '@/hooks/useFloor';
 import { cn } from '@/lib/utils';
 
+// Week titles for display
+const WEEK_TITLES: Record<number, string> = {
+  1: 'Foundation & Proof of Motion',
+  2: 'Pressure, Clarity & Commitment'
+};
+
 interface WeekSelectorProps {
   weeks: FloorWeek[];
   selectedWeek: number | null;
@@ -19,25 +25,29 @@ export function WeekSelector({ weeks, selectedWeek, onSelectWeek }: WeekSelector
             key={week.id}
             onClick={() => onSelectWeek(week.week_number)}
             className={cn(
-              "px-6 py-4 rounded-lg border transition-all duration-200",
-              "font-mono text-sm font-medium",
+              "px-6 py-4 rounded-lg border transition-all duration-200 text-left",
+              "font-mono text-sm",
               "hover:border-primary/50",
               selectedWeek === week.week_number
                 ? "bg-primary/10 border-primary text-primary"
                 : "bg-card border-border text-foreground hover:bg-muted/50"
             )}
           >
-            Week {week.week_number}
+            <div className="font-medium">Week {week.week_number}</div>
+            <div className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              {WEEK_TITLES[week.week_number] || `Week ${week.week_number}`}
+            </div>
           </button>
         ))}
         
         {/* Placeholder for future weeks */}
-        {[2, 3].filter(n => !weeks.find(w => w.week_number === n)).map((weekNum) => (
+        {[3, 4].filter(n => !weeks.find(w => w.week_number === n)).map((weekNum) => (
           <div
             key={`placeholder-${weekNum}`}
             className="px-6 py-4 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground/50 font-mono text-sm cursor-not-allowed"
           >
-            Week {weekNum}
+            <div>Week {weekNum}</div>
+            <div className="text-xs mt-1">Coming soon</div>
           </div>
         ))}
       </div>
