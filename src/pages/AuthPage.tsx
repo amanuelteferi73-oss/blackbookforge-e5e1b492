@@ -22,20 +22,25 @@ export default function AuthPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate('/', { replace: true });
+      }
+      if (event === 'INITIAL_SESSION') {
+        if (session) {
+          navigate('/', { replace: true });
+        }
+        setCheckingAuth(false);
+      }
+    });
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/', { replace: true });
       }
       setCheckingAuth(false);
-    };
-    
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/', { replace: true });
-      }
     });
 
     return () => subscription.unsubscribe();
