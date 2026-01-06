@@ -474,3 +474,21 @@ export async function getFailedItemsForDate(
 
   return items || [];
 }
+
+/**
+ * Get punishment for a specific date
+ */
+export async function getPunishmentForDate(
+  userId: string, 
+  date: string
+): Promise<{ punishment_text: string; is_resolved: boolean; proof_feeling: string | null } | null> {
+  const { data, error } = await supabase
+    .from('punishments')
+    .select('punishment_text, is_resolved, proof_feeling')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
+}

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { useScoreHistory, useScoringEngine } from '@/hooks/useScoringEngine';
-import { getFailedItemsForDate } from '@/lib/scoringEngine';
+import { getFailedItemsForDate, getPunishmentForDate } from '@/lib/scoringEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FailedItem {
@@ -13,12 +13,19 @@ interface FailedItem {
   points_lost: number;
 }
 
+interface PunishmentInfo {
+  punishment_text: string;
+  is_resolved: boolean;
+  proof_feeling: string | null;
+}
+
 export default function ProgressPage() {
   const time = useTimeEngine(60000);
   const { currentStreak, totalCheckIns, isLoading: statsLoading } = useScoringEngine();
   const { history: scoreHistory, isLoading: historyLoading } = useScoreHistory(30);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
+  const [punishment, setPunishment] = useState<PunishmentInfo | null>(null);
   const [loadingItems, setLoadingItems] = useState(false);
 
   const isLoading = statsLoading || historyLoading;
@@ -42,6 +49,7 @@ export default function ProgressPage() {
     if (expandedDate === date) {
       setExpandedDate(null);
       setFailedItems([]);
+      setPunishment(null);
       return;
     }
 
@@ -51,8 +59,12 @@ export default function ProgressPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const items = await getFailedItemsForDate(user.id, date);
+        const [items, punishmentData] = await Promise.all([
+          getFailedItemsForDate(user.id, date),
+          getPunishmentForDate(user.id, date)
+        ]);
         setFailedItems(items);
+        setPunishment(punishmentData);
       }
     } catch (error) {
       console.error('Failed to load failed items:', error);
@@ -252,6 +264,42 @@ export default function ProgressPage() {
                           <p className="text-sm text-muted-foreground py-2">
                             No failure details recorded
                           </p>
+                        )}
+
+                        {/* Punishment History */}
+                        {punishment && (
+                          <div className="mt-3 pt-3 border-t border-muted">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                              <Gavel className="w-3 h-3" />
+                              Punishment Assigned
+                            </div>
+                            <div className={cn(
+                              "p-3 rounded text-sm",
+                              punishment.is_resolved 
+                                ? "bg-primary/10 border border-primary/20"
+                                : "bg-warning/10 border border-warning/20"
+                            )}>
+                              <p className="text-sm">{punishment.punishment_text}</p>
+                              <div className="flex items-center gap-2 mt-2 text-xs">
+                                {punishment.is_resolved ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-primary" />
+                                    <span className="text-primary">Resolved</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
+                                    <span className="text-warning">Pending</span>
+                                  </>
+                                )}
+                              </div>
+                              {punishment.proof_feeling && (
+                                <p className="text-xs text-muted-foreground mt-2 italic">
+                                  "{punishment.proof_feeling}"
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

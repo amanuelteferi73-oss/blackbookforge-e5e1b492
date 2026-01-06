@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { getTodayKey } from '@/lib/timeEngine';
 import { 
   CHECK_IN_SECTIONS, 
@@ -20,7 +21,7 @@ import { FloorPillarSection } from './FloorPillarSection';
 import { PunishmentFlow } from '@/components/punishment/PunishmentFlow';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers } from 'lucide-react';
+import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers, Gift } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ const PILLAR_ICONS = {
 
 export function EnforcementCheckIn() {
   const navigate = useNavigate();
+  const timeState = useTimeEngine(60000);
   const [answers, setAnswers] = useState<Map<string, boolean>>(new Map());
   const [selectedPillars, setSelectedPillars] = useState<PillarType[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +43,7 @@ export function EnforcementCheckIn() {
   const [failedItems, setFailedItems] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [showPunishmentFlow, setShowPunishmentFlow] = useState(false);
+  const [unlockReward, setUnlockReward] = useState<string | null>(null);
   const [punishmentData, setPunishmentData] = useState<{
     checkInId: string;
     score: number;
@@ -157,6 +160,33 @@ export function EnforcementCheckIn() {
 
     load();
   }, []);
+
+  // Fetch unlock reward when check-in exists and score is above punishment threshold
+  useEffect(() => {
+    const fetchUnlockReward = async () => {
+      if (!existingCheckIn || !userId || existingCheckIn.total_score <= PUNISHMENT_THRESHOLD) {
+        return;
+      }
+
+      try {
+        // Get the floor day for current day number
+        const { data: floorDay } = await supabase
+          .from('floor_days')
+          .select('unlock_text, floor_weeks!inner(user_id)')
+          .eq('day_number', timeState.dayNumber)
+          .eq('floor_weeks.user_id', userId)
+          .maybeSingle();
+
+        if (floorDay?.unlock_text) {
+          setUnlockReward(floorDay.unlock_text);
+        }
+      } catch (error) {
+        console.error('Failed to fetch unlock reward:', error);
+      }
+    };
+
+    fetchUnlockReward();
+  }, [existingCheckIn, userId, timeState.dayNumber]);
 
   // Toggle answer
   const handleToggle = (questionId: string) => {
@@ -419,6 +449,21 @@ export function EnforcementCheckIn() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Unlock Reward (only show if score is above punishment threshold) */}
+        {unlockReward && existingCheckIn.total_score > PUNISHMENT_THRESHOLD && (
+          <div className="p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                <Gift className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-semibold text-primary uppercase tracking-wide text-sm">
+                Unlocked Today
+              </span>
+            </div>
+            <p className="text-sm whitespace-pre-line">{unlockReward}</p>
           </div>
         )}
 
