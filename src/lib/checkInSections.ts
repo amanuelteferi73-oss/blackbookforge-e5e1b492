@@ -1,7 +1,9 @@
 // Daily Check-In Sections Configuration
 // This is the IMMUTABLE truth structure - DO NOT MODIFY QUESTION WORDING OR POINTS
 
-export type FocusPillar = 'startup' | 'cash' | 'school' | null;
+// Multi-pillar system: users can select 1-2 pillars per day
+export type PillarType = 'school' | 'startup' | 'cash' | 'floor';
+export type FocusPillar = 'startup' | 'cash' | 'school' | null; // Legacy support
 
 export interface CheckInQuestion {
   id: string;
@@ -17,13 +19,20 @@ export interface CheckInSection {
   isCritical?: boolean;
   isConditional?: boolean;
   scoringLogic?: 'standard' | 'percentage-tier';
-  // NEW: Pillar visibility control
-  pillarRequired?: FocusPillar; // Only visible when this pillar is selected
+  // Pillar visibility control
+  pillarRequired?: PillarType; // Only visible when this pillar is selected
+}
+
+// Dynamic floor action interface
+export interface FloorActionQuestion {
+  id: string;
+  text: string;
+  points: number;
 }
 
 // FIXED SECTIONS - Always visible (A, B)
-// CORE SECTIONS - Always visible (E, F, G, H, I) - reordered to come before pillar
-// PILLAR-CONDITIONAL - C (cash), D (startup), S (school)
+// CORE SECTIONS - Always visible (E, F, G, H, I)
+// PILLAR-CONDITIONAL - C (cash), D (startup), S (school), FL (floor - dynamic)
 
 export const CHECK_IN_SECTIONS: CheckInSection[] = [
   // === FIXED SECTIONS (Always visible) ===
@@ -48,7 +57,7 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
     ],
   },
 
-  // === CORE SECTIONS (Always visible, reordered) ===
+  // === CORE SECTIONS (Always visible) ===
   {
     id: 'E',
     title: 'Speed & Fear Check',
@@ -140,19 +149,34 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
   },
 ];
 
-// Get sections visible for a given pillar
-export function getVisibleSections(pillar: FocusPillar): CheckInSection[] {
+// Get sections visible for selected pillars (multi-pillar support)
+export function getVisibleSectionsMulti(selectedPillars: PillarType[]): CheckInSection[] {
   return CHECK_IN_SECTIONS.filter(section => {
     // No pillar required = always visible
     if (!section.pillarRequired) return true;
-    // Pillar required but none selected = hidden
+    // Floor is handled separately (dynamic)
+    if (section.pillarRequired === 'floor') return false;
+    // Show if pillar is in selected array
+    return selectedPillars.includes(section.pillarRequired);
+  });
+}
+
+// Legacy: Get sections visible for a single pillar
+export function getVisibleSections(pillar: FocusPillar): CheckInSection[] {
+  return CHECK_IN_SECTIONS.filter(section => {
+    if (!section.pillarRequired) return true;
     if (!pillar) return false;
-    // Show only if pillar matches
     return section.pillarRequired === pillar;
   });
 }
 
-// Calculate total possible points for a pillar
+// Calculate total possible points for selected pillars (excluding floor - added dynamically)
+export function getTotalPossiblePointsMulti(selectedPillars: PillarType[], floorPoints: number = 0): number {
+  const staticPoints = getVisibleSectionsMulti(selectedPillars).reduce((sum, section) => sum + section.maxPoints, 0);
+  return staticPoints + (selectedPillars.includes('floor') ? floorPoints : 0);
+}
+
+// Legacy: Calculate total possible points for a single pillar
 export function getTotalPossiblePoints(pillar: FocusPillar): number {
   return getVisibleSections(pillar).reduce((sum, section) => sum + section.maxPoints, 0);
 }
@@ -199,27 +223,33 @@ export interface CheckInResult {
   }[];
 }
 
-// Updated score calculation that respects pillar visibility
-export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPillar = null): CheckInResult {
+// Multi-pillar score calculation with floor actions
+export function calculateCheckInScoreMulti(
+  answers: QuestionAnswer[], 
+  selectedPillars: PillarType[],
+  floorActions: FloorActionQuestion[] = []
+): CheckInResult {
   const answerMap = new Map(answers.map(a => [a.questionId, a.value]));
   const failedItems: CheckInResult['failedItems'] = [];
   const sectionScores: CheckInResult['sectionScores'] = [];
   let totalScore = 0;
   let disciplineBreach = false;
 
-  // Only calculate for visible sections
-  const visibleSections = getVisibleSections(pillar);
-  const maxPossiblePoints = getTotalPossiblePoints(pillar);
+  // Get static sections
+  const visibleSections = getVisibleSectionsMulti(selectedPillars);
+  
+  // Calculate floor points
+  const floorTotalPoints = floorActions.reduce((sum, a) => sum + a.points, 0);
+  const maxPossiblePoints = getTotalPossiblePointsMulti(selectedPillars, floorTotalPoints);
 
+  // Calculate static sections
   for (const section of visibleSections) {
     let sectionEarned = 0;
 
     if (section.scoringLogic === 'percentage-tier') {
-      // Section H special logic
       const completedCount = section.questions.filter(q => answerMap.get(q.id) === true).length;
       sectionEarned = calculateSectionHScore(completedCount, section.questions.length);
       
-      // Track failed items for Section H
       for (const question of section.questions) {
         if (answerMap.get(question.id) !== true) {
           failedItems.push({
@@ -232,12 +262,10 @@ export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPi
         }
       }
     } else {
-      // Standard scoring
       for (const question of section.questions) {
         const answered = answerMap.get(question.id);
         
         // Special handling for Section I (Closing Honesty)
-        // "No" = 5 pts, "Yes" = 0 pts
         if (section.id === 'I') {
           if (answered === false) {
             sectionEarned += question.points;
@@ -251,7 +279,6 @@ export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPi
             });
           }
         } else {
-          // Normal questions: Yes = points, No = 0
           if (answered === true) {
             sectionEarned += question.points;
           } else {
@@ -263,7 +290,6 @@ export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPi
               severity: section.isCritical ? 'critical' : 'standard',
             });
             
-            // Check for discipline breach
             if (section.isCritical && answered === false) {
               disciplineBreach = true;
             }
@@ -282,6 +308,35 @@ export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPi
     totalScore += sectionEarned;
   }
 
+  // Calculate floor section if selected
+  if (selectedPillars.includes('floor') && floorActions.length > 0) {
+    let floorEarned = 0;
+    
+    for (const action of floorActions) {
+      const answered = answerMap.get(action.id);
+      if (answered === true) {
+        floorEarned += action.points;
+      } else {
+        failedItems.push({
+          section: 'FL',
+          questionId: action.id,
+          questionText: action.text,
+          pointsLost: action.points,
+          severity: 'standard',
+        });
+      }
+    }
+
+    sectionScores.push({
+      sectionId: 'FL',
+      title: 'The Floor Actions',
+      earned: floorEarned,
+      max: floorTotalPoints,
+    });
+
+    totalScore += floorEarned;
+  }
+
   return {
     totalScore: Math.round(totalScore),
     maxScore: maxPossiblePoints,
@@ -292,7 +347,13 @@ export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPi
   };
 }
 
-// Focus Pillar options for UI
+// Legacy: Calculate score for single pillar
+export function calculateCheckInScore(answers: QuestionAnswer[], pillar: FocusPillar = null): CheckInResult {
+  const selectedPillars: PillarType[] = pillar ? [pillar] : [];
+  return calculateCheckInScoreMulti(answers, selectedPillars);
+}
+
+// Focus Pillar options for UI (legacy)
 export const FOCUS_PILLAR_OPTIONS = [
   { value: 'startup' as const, label: 'Startup / Product Building', description: 'Building, shipping, iterating' },
   { value: 'cash' as const, label: 'Cash Flow / Client Acquisition', description: 'Revenue, sales, outreach' },

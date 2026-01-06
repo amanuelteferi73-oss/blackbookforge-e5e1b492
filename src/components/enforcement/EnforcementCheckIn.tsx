@@ -4,21 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTodayKey } from '@/lib/timeEngine';
 import { 
   CHECK_IN_SECTIONS, 
-  getVisibleSections,
-  getTotalPossiblePoints,
-  calculateCheckInScore,
+  getVisibleSectionsMulti,
+  getTotalPossiblePointsMulti,
+  calculateCheckInScoreMulti,
   QuestionAnswer,
   CheckInResult,
-  FocusPillar,
+  PillarType,
   FOCUS_PILLAR_OPTIONS,
 } from '@/lib/checkInSections';
+import { useTodayFloorActions } from '@/hooks/useTodayFloorActions';
 import { PUNISHMENT_THRESHOLD } from '@/lib/punishments';
 import { CheckInSection } from './CheckInSection';
-import { FocusPillarSelector } from './FocusPillarSelector';
+import { PillarMultiSelector } from './PillarMultiSelector';
+import { FloorPillarSection } from './FloorPillarSection';
 import { PunishmentFlow } from '@/components/punishment/PunishmentFlow';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap } from 'lucide-react';
+import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -26,12 +28,13 @@ const PILLAR_ICONS = {
   startup: Rocket,
   cash: Briefcase,
   school: GraduationCap,
+  floor: Layers,
 };
 
 export function EnforcementCheckIn() {
   const navigate = useNavigate();
   const [answers, setAnswers] = useState<Map<string, boolean>>(new Map());
-  const [focusPillar, setFocusPillar] = useState<FocusPillar>(null);
+  const [selectedPillars, setSelectedPillars] = useState<PillarType[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [existingCheckIn, setExistingCheckIn] = useState<any>(null);
@@ -45,22 +48,36 @@ export function EnforcementCheckIn() {
     date: string;
   } | null>(null);
 
-  // Get visible sections based on pillar
-  const visibleSections = useMemo(() => getVisibleSections(focusPillar), [focusPillar]);
+  // Get today's floor actions
+  const floorData = useTodayFloorActions();
 
-  // Get all questions count for visible sections
-  const totalQuestions = useMemo(() => 
-    visibleSections.reduce((sum, s) => sum + s.questions.length, 0),
-    [visibleSections]
+  // Get visible sections based on selected pillars
+  const visibleSections = useMemo(() => getVisibleSectionsMulti(selectedPillars), [selectedPillars]);
+
+  // Calculate floor points
+  const floorTotalPoints = useMemo(() => 
+    floorData.actions.reduce((sum, a) => sum + a.points, 0),
+    [floorData.actions]
   );
 
-  // Calculate current progress (only count answers for visible sections)
+  // Get all questions count for visible sections + floor actions
+  const totalQuestions = useMemo(() => {
+    const staticCount = visibleSections.reduce((sum, s) => sum + s.questions.length, 0);
+    const floorCount = selectedPillars.includes('floor') ? floorData.actions.length : 0;
+    return staticCount + floorCount;
+  }, [visibleSections, selectedPillars, floorData.actions]);
+
+  // Calculate current progress (only count answers for visible sections + floor)
   const answeredCount = useMemo(() => {
     const visibleQuestionIds = new Set(
       visibleSections.flatMap(s => s.questions.map(q => q.id))
     );
+    // Add floor action IDs if floor is selected
+    if (selectedPillars.includes('floor')) {
+      floorData.actions.forEach(a => visibleQuestionIds.add(a.id));
+    }
     return Array.from(answers.keys()).filter(id => visibleQuestionIds.has(id)).length;
-  }, [answers, visibleSections]);
+  }, [answers, visibleSections, selectedPillars, floorData.actions]);
 
   const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
@@ -69,8 +86,12 @@ export function EnforcementCheckIn() {
     const answerArray: QuestionAnswer[] = Array.from(answers.entries()).map(
       ([questionId, value]) => ({ questionId, value })
     );
-    return calculateCheckInScore(answerArray, focusPillar);
-  }, [answers, focusPillar]);
+    return calculateCheckInScoreMulti(
+      answerArray, 
+      selectedPillars,
+      selectedPillars.includes('floor') ? floorData.actions : []
+    );
+  }, [answers, selectedPillars, floorData.actions]);
 
   // Load user and existing check-in
   useEffect(() => {
@@ -94,7 +115,14 @@ export function EnforcementCheckIn() {
 
       if (checkIn) {
         setExistingCheckIn(checkIn);
-        setFocusPillar(checkIn.focus_pillar as FocusPillar);
+        // Parse selected_pillars from jsonb
+        const savedPillars = checkIn.selected_pillars as PillarType[] | null;
+        if (Array.isArray(savedPillars)) {
+          setSelectedPillars(savedPillars);
+        } else if (checkIn.focus_pillar) {
+          // Legacy: convert single focus_pillar to array
+          setSelectedPillars([checkIn.focus_pillar as PillarType]);
+        }
         
         // Load failed items
         const { data: items } = await supabase
@@ -104,7 +132,7 @@ export function EnforcementCheckIn() {
         
         setFailedItems(items || []);
         
-        // Check if punishment flow should be shown (score <= threshold and no resolved punishment)
+        // Check if punishment flow should be shown
         if (checkIn.total_score <= PUNISHMENT_THRESHOLD) {
           const { data: punishment } = await supabase
             .from('punishments')
@@ -112,7 +140,6 @@ export function EnforcementCheckIn() {
             .eq('daily_checkin_id', checkIn.id)
             .maybeSingle();
           
-          // Show punishment flow if no punishment exists or punishment is unresolved
           if (!punishment || !punishment.is_resolved) {
             setPunishmentData({
               checkInId: checkIn.id,
@@ -149,8 +176,20 @@ export function EnforcementCheckIn() {
     });
   };
 
-  // Check if form is complete (pillar selected + all visible questions answered)
-  const isFormComplete = focusPillar !== null && answeredCount >= totalQuestions;
+  // Toggle pillar selection
+  const handlePillarToggle = (pillar: PillarType) => {
+    setSelectedPillars(prev => {
+      if (prev.includes(pillar)) {
+        return prev.filter(p => p !== pillar);
+      } else if (prev.length < 2) {
+        return [...prev, pillar];
+      }
+      return prev;
+    });
+  };
+
+  // Check if form is complete (at least 1 pillar + all visible questions answered)
+  const isFormComplete = selectedPillars.length >= 1 && answeredCount >= totalQuestions;
 
   // Submit check-in
   const handleSubmit = async () => {
@@ -159,10 +198,10 @@ export function EnforcementCheckIn() {
       return;
     }
 
-    if (!focusPillar) {
+    if (selectedPillars.length === 0) {
       toast({ 
-        title: 'Select Focus Pillar', 
-        description: 'Choose your primary focus for today.',
+        title: 'Select Focus Pillars', 
+        description: 'Choose at least 1 pillar for today.',
         variant: 'destructive' 
       });
       return;
@@ -184,9 +223,13 @@ export function EnforcementCheckIn() {
       const answerArray: QuestionAnswer[] = Array.from(answers.entries()).map(
         ([questionId, value]) => ({ questionId, value })
       );
-      const result = calculateCheckInScore(answerArray, focusPillar);
+      const result = calculateCheckInScoreMulti(
+        answerArray, 
+        selectedPillars,
+        selectedPillars.includes('floor') ? floorData.actions : []
+      );
 
-      // Create the check-in record with focus_pillar
+      // Create the check-in record with selected_pillars
       const { data: checkIn, error: checkInError } = await supabase
         .from('daily_checkins')
         .insert({
@@ -196,7 +239,8 @@ export function EnforcementCheckIn() {
           discipline_breach: result.disciplineBreach,
           submitted_at: new Date().toISOString(),
           is_missed: false,
-          focus_pillar: focusPillar,
+          focus_pillar: selectedPillars[0] || null, // Legacy: store first pillar
+          selected_pillars: selectedPillars, // New: store all pillars
         })
         .select()
         .single();
@@ -286,8 +330,11 @@ export function EnforcementCheckIn() {
 
   // Already submitted - show read-only view
   if (existingCheckIn) {
-    const pillarOption = FOCUS_PILLAR_OPTIONS.find(p => p.value === existingCheckIn.focus_pillar);
-    const PillarIcon = existingCheckIn.focus_pillar ? PILLAR_ICONS[existingCheckIn.focus_pillar as keyof typeof PILLAR_ICONS] : null;
+    const displayPillars = Array.isArray(existingCheckIn.selected_pillars) 
+      ? existingCheckIn.selected_pillars as PillarType[]
+      : existingCheckIn.focus_pillar 
+        ? [existingCheckIn.focus_pillar as PillarType]
+        : [];
 
     return (
       <div className="space-y-6">
@@ -302,16 +349,23 @@ export function EnforcementCheckIn() {
           </div>
         </div>
 
-        {/* Pillar Display */}
-        {pillarOption && PillarIcon && (
-          <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg border border-primary/30">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <PillarIcon className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Focus Pillar</p>
-              <p className="font-medium">{pillarOption.label}</p>
-            </div>
+        {/* Pillars Display */}
+        {displayPillars.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {displayPillars.map(pillar => {
+              const PillarIcon = PILLAR_ICONS[pillar];
+              return (
+                <div 
+                  key={pillar}
+                  className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/30"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <PillarIcon className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <span className="font-medium capitalize">{pillar}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -386,7 +440,7 @@ export function EnforcementCheckIn() {
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">Daily Check-In</h1>
         <p className="text-sm text-muted-foreground">
-          One day, one fight • Select your focus, answer honestly
+          One day, one fight • Select your pillars, answer honestly
         </p>
       </div>
 
@@ -394,7 +448,9 @@ export function EnforcementCheckIn() {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-3 -mx-4 px-4 border-b">
         <div className="flex items-center justify-between text-sm mb-2">
           <span>
-            {focusPillar ? `${answeredCount} / ${totalQuestions} answered` : 'Select focus pillar first'}
+            {selectedPillars.length > 0 
+              ? `${answeredCount} / ${totalQuestions} answered` 
+              : 'Select pillars first'}
           </span>
           <span className={cn(
             "font-bold",
@@ -434,15 +490,21 @@ export function EnforcementCheckIn() {
         ))}
       </div>
 
-      {/* Focus Pillar Selector (Section X) */}
-      <FocusPillarSelector
-        value={focusPillar}
-        onChange={setFocusPillar}
+      {/* Multi-Pillar Selector */}
+      <PillarMultiSelector
+        selectedPillars={selectedPillars}
+        onToggle={handlePillarToggle}
         isLocked={false}
+        floorDayInfo={{
+          dayNumber: floorData.dayNumber,
+          dayTitle: floorData.dayTitle,
+          hasActions: floorData.actions.length > 0,
+        }}
+        maxPillars={2}
       />
 
-      {/* Pillar-Conditional Section (C, D, or S) */}
-      {focusPillar && (
+      {/* Pillar-Conditional Sections (C, D, S) */}
+      {selectedPillars.length > 0 && (
         <div className="space-y-6">
           {visibleSections.filter(s => ['C', 'D', 'S'].includes(s.id)).map((section) => (
             <CheckInSection
@@ -454,6 +516,20 @@ export function EnforcementCheckIn() {
             />
           ))}
         </div>
+      )}
+
+      {/* Floor Pillar Section (Dynamic) */}
+      {selectedPillars.includes('floor') && (
+        <FloorPillarSection
+          dayNumber={floorData.dayNumber}
+          dayTitle={floorData.dayTitle}
+          intent={floorData.intent}
+          actions={floorData.actions}
+          answers={answers}
+          onToggle={handleToggle}
+          isLocked={false}
+          isLoading={floorData.isLoading}
+        />
       )}
 
       {/* Closing Section I */}
@@ -478,9 +554,9 @@ export function EnforcementCheckIn() {
         
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Points: {previewResult.totalScore} / {previewResult.maxScore}</span>
-          {focusPillar && (
+          {selectedPillars.length > 0 && (
             <span className="text-primary">
-              {FOCUS_PILLAR_OPTIONS.find(p => p.value === focusPillar)?.label}
+              {selectedPillars.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' + ')}
             </span>
           )}
         </div>
@@ -510,8 +586,8 @@ export function EnforcementCheckIn() {
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Submitting...
           </>
-        ) : !focusPillar ? (
-          'Select Focus Pillar First'
+        ) : selectedPillars.length === 0 ? (
+          'Select at least 1 Pillar'
         ) : answeredCount < totalQuestions ? (
           `Answer ${totalQuestions - answeredCount} more questions`
         ) : (
