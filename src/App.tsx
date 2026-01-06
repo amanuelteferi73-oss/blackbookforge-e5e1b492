@@ -12,6 +12,7 @@ import CheckInPage from "./pages/CheckInPage";
 import VaultPage from "./pages/VaultPage";
 import RealityPage from "./pages/RealityPage";
 import ProgressPage from "./pages/ProgressPage";
+import FloorPage from "./pages/FloorPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +45,7 @@ const App = () => (
                       <Route path="/vault" element={<VaultPage />} />
                       <Route path="/reality" element={<RealityPage />} />
                       <Route path="/progress" element={<ProgressPage />} />
+                      <Route path="/floor" element={<FloorPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </main>

@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { Home, CheckSquare, Lock, Image, BarChart3, LogOut } from 'lucide-react';
+import { Home, CheckSquare, Lock, Image, BarChart3, Layers, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
   { to: '/', icon: Home, label: 'Dashboard' },
   { to: '/check-in', icon: CheckSquare, label: 'Check-In' },
+  { to: '/floor', icon: Layers, label: 'The Floor' },
   { to: '/vault', icon: Lock, label: 'Vault' },
   { to: '/reality', icon: Image, label: 'Reality' },
   { to: '/progress', icon: BarChart3, label: 'Progress' },

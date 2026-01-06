@@ -322,6 +322,118 @@ export type Database = {
           },
         ]
       }
+      floor_days: {
+        Row: {
+          actions: Json
+          created_at: string
+          day_number: number
+          id: string
+          intent: string
+          rules: string | null
+          title: string
+          unlock_text: string | null
+          week_id: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          day_number: number
+          id?: string
+          intent: string
+          rules?: string | null
+          title: string
+          unlock_text?: string | null
+          week_id: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          day_number?: number
+          id?: string
+          intent?: string
+          rules?: string | null
+          title?: string
+          unlock_text?: string | null
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_days_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "floor_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      floor_timers: {
+        Row: {
+          created_at: string
+          day_id: string
+          ends_at: string
+          id: string
+          is_active: boolean
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_id: string
+          ends_at: string
+          id?: string
+          is_active?: boolean
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_id?: string
+          ends_at?: string
+          id?: string
+          is_active?: boolean
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floor_timers_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "floor_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      floor_weeks: {
+        Row: {
+          created_at: string
+          focus_split: string | null
+          id: string
+          objective: string
+          success_condition: string | null
+          user_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          focus_split?: string | null
+          id?: string
+          objective: string
+          success_condition?: string | null
+          user_id: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          focus_split?: string | null
+          id?: string
+          objective?: string
+          success_condition?: string | null
+          user_id?: string
+          week_number?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
