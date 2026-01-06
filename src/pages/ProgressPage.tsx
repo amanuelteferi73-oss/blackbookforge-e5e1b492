@@ -1,11 +1,25 @@
+import { useState } from 'react';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { useScoreHistory, useScoringEngine } from '@/hooks/useScoringEngine';
-import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2 } from 'lucide-react';
+import { getFailedItemsForDate } from '@/lib/scoringEngine';
+import { supabase } from '@/integrations/supabase/client';
+import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface FailedItem {
+  section: string;
+  question_text: string;
+  severity: string;
+  points_lost: number;
+}
 
 export default function ProgressPage() {
-  const time = useTimeEngine(60000); // Update every minute
+  const time = useTimeEngine(60000);
   const { currentStreak, totalCheckIns, isLoading: statsLoading } = useScoringEngine();
   const { history: scoreHistory, isLoading: historyLoading } = useScoreHistory(30);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   const isLoading = statsLoading || historyLoading;
 
@@ -20,6 +34,32 @@ export default function ProgressPage() {
   const completionRate = time.dayNumber > 0
     ? Math.round((totalCheckIns / time.dayNumber) * 100)
     : 0;
+
+  const handleDayClick = async (date: string, score: number, is_missed: boolean) => {
+    // Don't expand if perfect score or missed
+    if (score === 100 || is_missed) return;
+
+    if (expandedDate === date) {
+      setExpandedDate(null);
+      setFailedItems([]);
+      return;
+    }
+
+    setExpandedDate(date);
+    setLoadingItems(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const items = await getFailedItemsForDate(user.id, date);
+        setFailedItems(items);
+      }
+    } catch (error) {
+      console.error('Failed to load failed items:', error);
+    } finally {
+      setLoadingItems(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -124,31 +164,100 @@ export default function ProgressPage() {
           </h3>
           
           {scoreHistory.length > 0 ? (
-            <div className="space-y-2">
-              {scoreHistory.slice().reverse().map(({ date, score, is_missed }) => (
-                <div key={date} className="flex items-center gap-4">
-                  <span className="font-mono text-xs text-muted-foreground w-24">
-                    {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="space-y-1">
+              {scoreHistory.slice().reverse().map(({ date, score, is_missed }) => {
+                const isClickable = score < 100 && !is_missed;
+                const isExpanded = expandedDate === date;
+                
+                return (
+                  <div key={date}>
                     <div 
-                      className={`h-full transition-all ${
-                        is_missed ? 'bg-muted-foreground/30' :
-                        score >= 80 ? 'bg-success' :
-                        score >= 50 ? 'bg-warning' : 'bg-destructive'
-                      }`}
-                      style={{ width: is_missed ? '100%' : `${score}%` }}
-                    />
+                      className={cn(
+                        "flex items-center gap-4 p-2 -mx-2 rounded transition-colors",
+                        isClickable && "cursor-pointer hover:bg-muted/50",
+                        isExpanded && "bg-muted/50"
+                      )}
+                      onClick={() => isClickable && handleDayClick(date, score, is_missed)}
+                    >
+                      {/* Expand indicator */}
+                      <div className="w-4 flex-shrink-0">
+                        {isClickable && (
+                          isExpanded 
+                            ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                            : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      
+                      <span className="font-mono text-xs text-muted-foreground w-20">
+                        {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${
+                            is_missed ? 'bg-muted-foreground/30' :
+                            score >= 80 ? 'bg-success' :
+                            score >= 50 ? 'bg-warning' : 'bg-destructive'
+                          }`}
+                          style={{ width: is_missed ? '100%' : `${score}%` }}
+                        />
+                      </div>
+                      <span className={`font-mono text-sm w-12 text-right ${
+                        is_missed ? 'text-muted-foreground' :
+                        score >= 80 ? 'text-success' :
+                        score >= 50 ? 'text-warning' : 'text-destructive'
+                      }`}>
+                        {is_missed ? 'MISS' : score}
+                      </span>
+                    </div>
+                    
+                    {/* Expanded failed items */}
+                    {isExpanded && (
+                      <div className="ml-6 pl-4 border-l-2 border-muted mt-2 mb-4 space-y-2">
+                        {loadingItems ? (
+                          <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading failures...
+                          </div>
+                        ) : failedItems.length > 0 ? (
+                          <>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                              <XCircle className="w-3 h-3" />
+                              {failedItems.length} failed item{failedItems.length !== 1 ? 's' : ''}
+                            </div>
+                            {failedItems.map((item, idx) => (
+                              <div 
+                                key={idx}
+                                className={cn(
+                                  "p-2 rounded text-sm",
+                                  item.severity === 'critical' 
+                                    ? "bg-destructive/10 border border-destructive/20"
+                                    : "bg-muted/50"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <span className="text-xs font-mono text-muted-foreground">
+                                      {item.section}
+                                    </span>
+                                    <p className="text-sm mt-0.5">{item.question_text}</p>
+                                  </div>
+                                  <span className="text-destructive text-xs font-medium shrink-0">
+                                    -{item.points_lost}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground py-2">
+                            No failure details recorded
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <span className={`font-mono text-sm w-12 text-right ${
-                    is_missed ? 'text-muted-foreground' :
-                    score >= 80 ? 'text-success' :
-                    score >= 50 ? 'text-warning' : 'text-destructive'
-                  }`}>
-                    {is_missed ? 'MISS' : score}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">

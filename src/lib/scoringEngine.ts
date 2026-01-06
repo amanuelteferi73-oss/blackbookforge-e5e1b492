@@ -440,3 +440,37 @@ export async function getAverages(userId: string): Promise<{
     rolling7Day: weekly, // Same as weekly for now
   };
 }
+
+/**
+ * Get failed items for a specific date
+ */
+export async function getFailedItemsForDate(
+  userId: string, 
+  date: string
+): Promise<{ section: string; question_text: string; severity: string; points_lost: number }[]> {
+  // First get the check-in ID
+  const { data: checkIn, error: checkInError } = await supabase
+    .from('daily_checkins')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+
+  if (checkInError || !checkIn) {
+    console.error('[ScoringEngine] Failed to get check-in for date:', checkInError);
+    return [];
+  }
+
+  // Then get failed items
+  const { data: items, error: itemsError } = await supabase
+    .from('failed_items')
+    .select('section, question_text, severity, points_lost')
+    .eq('daily_checkin_id', checkIn.id);
+
+  if (itemsError) {
+    console.error('[ScoringEngine] Failed to get failed items:', itemsError);
+    return [];
+  }
+
+  return items || [];
+}
