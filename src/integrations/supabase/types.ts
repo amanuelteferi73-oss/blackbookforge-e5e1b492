@@ -603,7 +603,7 @@ export type Database = {
     }
     Enums: {
       asset_category: "past" | "future" | "dream" | "reward" | "legacy"
-      asset_type: "image" | "audio" | "message"
+      asset_type: "image" | "audio" | "message" | "video"
       unlock_condition_type: "score" | "streak" | "date" | "manual"
     }
     CompositeTypes: {
@@ -733,7 +733,7 @@ export const Constants = {
   public: {
     Enums: {
       asset_category: ["past", "future", "dream", "reward", "legacy"],
-      asset_type: ["image", "audio", "message"],
+      asset_type: ["image", "audio", "message", "video"],
       unlock_condition_type: ["score", "streak", "date", "manual"],
     },
   },
