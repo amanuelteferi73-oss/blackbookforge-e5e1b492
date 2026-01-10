@@ -122,6 +122,7 @@ export type Database = {
       daily_checkins: {
         Row: {
           created_at: string
+          daily_achievement: string | null
           date: string
           discipline_breach: boolean
           failure_note: string | null
@@ -135,6 +136,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_achievement?: string | null
           date: string
           discipline_breach?: boolean
           failure_note?: string | null
@@ -148,6 +150,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_achievement?: string | null
           date?: string
           discipline_breach?: boolean
           failure_note?: string | null

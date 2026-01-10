@@ -21,7 +21,8 @@ import { FloorPillarSection } from './FloorPillarSection';
 import { PunishmentFlow } from '@/components/punishment/PunishmentFlow';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers, Gift } from 'lucide-react';
+import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers, Gift, Trophy } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +45,7 @@ export function EnforcementCheckIn() {
   const [userId, setUserId] = useState<string | null>(null);
   const [showPunishmentFlow, setShowPunishmentFlow] = useState(false);
   const [unlockReward, setUnlockReward] = useState<string | null>(null);
+  const [dailyAchievement, setDailyAchievement] = useState<string>('');
   const [punishmentData, setPunishmentData] = useState<{
     checkInId: string;
     score: number;
@@ -271,6 +273,7 @@ export function EnforcementCheckIn() {
           is_missed: false,
           focus_pillar: selectedPillars[0] || null, // Legacy: store first pillar
           selected_pillars: selectedPillars, // New: store all pillars
+          daily_achievement: dailyAchievement.trim() || null, // Store daily achievement
         })
         .select()
         .single();
@@ -467,6 +470,21 @@ export function EnforcementCheckIn() {
           </div>
         )}
 
+        {/* Daily Achievement (read-only view) */}
+        {existingCheckIn.daily_achievement && (
+          <div className="p-4 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Trophy className="h-4 w-4 text-amber-500" />
+              </div>
+              <span className="font-semibold uppercase tracking-wide text-sm">
+                Today's Achievement
+              </span>
+            </div>
+            <p className="text-sm whitespace-pre-line">{existingCheckIn.daily_achievement}</p>
+          </div>
+        )}
+
         <Button 
           variant="outline" 
           className="w-full"
@@ -588,6 +606,25 @@ export function EnforcementCheckIn() {
             isLocked={false}
           />
         ))}
+      </div>
+
+      {/* Daily Achievement Section */}
+      <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <Trophy className="h-4 w-4 text-amber-500" />
+          </div>
+          <div>
+            <h3 className="font-semibold">Today's Achievement</h3>
+            <p className="text-xs text-muted-foreground">Optional • No score impact</p>
+          </div>
+        </div>
+        <Textarea
+          placeholder="What did you accomplish today? Write something you're proud of..."
+          value={dailyAchievement}
+          onChange={(e) => setDailyAchievement(e.target.value)}
+          className="min-h-[100px] resize-none bg-background"
+        />
       </div>
 
       {/* Preview Score */}
