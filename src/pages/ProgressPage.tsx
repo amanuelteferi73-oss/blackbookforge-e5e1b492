@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { useScoreHistory, useScoringEngine } from '@/hooks/useScoringEngine';
-import { getFailedItemsForDate, getPunishmentForDate } from '@/lib/scoringEngine';
+import { getFailedItemsForDate, getPunishmentForDate, getDailyAchievementForDate } from '@/lib/scoringEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FailedItem {
@@ -26,6 +26,7 @@ export default function ProgressPage() {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
   const [punishment, setPunishment] = useState<PunishmentInfo | null>(null);
+  const [dailyAchievement, setDailyAchievement] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(false);
 
   const isLoading = statsLoading || historyLoading;
@@ -43,13 +44,14 @@ export default function ProgressPage() {
     : 0;
 
   const handleDayClick = async (date: string, score: number, is_missed: boolean) => {
-    // Don't expand if perfect score or missed
-    if (score === 100 || is_missed) return;
+    // Don't expand if missed
+    if (is_missed) return;
 
     if (expandedDate === date) {
       setExpandedDate(null);
       setFailedItems([]);
       setPunishment(null);
+      setDailyAchievement(null);
       return;
     }
 
@@ -59,15 +61,17 @@ export default function ProgressPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const [items, punishmentData] = await Promise.all([
+        const [items, punishmentData, achievement] = await Promise.all([
           getFailedItemsForDate(user.id, date),
-          getPunishmentForDate(user.id, date)
+          getPunishmentForDate(user.id, date),
+          getDailyAchievementForDate(user.id, date)
         ]);
         setFailedItems(items);
         setPunishment(punishmentData);
+        setDailyAchievement(achievement);
       }
     } catch (error) {
-      console.error('Failed to load failed items:', error);
+      console.error('Failed to load daily details:', error);
     } finally {
       setLoadingItems(false);
     }
@@ -178,7 +182,7 @@ export default function ProgressPage() {
           {scoreHistory.length > 0 ? (
             <div className="space-y-1">
               {scoreHistory.slice().reverse().map(({ date, score, is_missed }) => {
-                const isClickable = score < 100 && !is_missed;
+                const isClickable = !is_missed;
                 const isExpanded = expandedDate === date;
                 
                 return (
@@ -298,6 +302,19 @@ export default function ProgressPage() {
                                   "{punishment.proof_feeling}"
                                 </p>
                               )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Daily Achievement */}
+                        {dailyAchievement && (
+                          <div className="mt-3 pt-3 border-t border-muted">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                              <Trophy className="w-3 h-3 text-amber-500" />
+                              Daily Achievement
+                            </div>
+                            <div className="p-3 rounded text-sm bg-amber-500/10 border border-amber-500/20">
+                              <p className="text-sm whitespace-pre-line">{dailyAchievement}</p>
                             </div>
                           </div>
                         )}

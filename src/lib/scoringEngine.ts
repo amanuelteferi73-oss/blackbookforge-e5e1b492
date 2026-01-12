@@ -492,3 +492,21 @@ export async function getPunishmentForDate(
   if (error || !data) return null;
   return data;
 }
+
+/**
+ * Get daily achievement for a specific date
+ */
+export async function getDailyAchievementForDate(
+  userId: string, 
+  date: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('daily_checkins')
+    .select('daily_achievement')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data.daily_achievement;
+}
