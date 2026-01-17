@@ -5,6 +5,7 @@ import { PastSelfGallery } from '@/components/PastSelfGallery';
 import { VaultPreview } from '@/components/VaultPreview';
 import { LegacyLock } from '@/components/LegacyLock';
 import { ActiveFloorTimer } from '@/components/dashboard/ActiveFloorTimer';
+import { MyPlaylist } from '@/components/playlist/MyPlaylist';
 
 const Index = () => {
   return (
@@ -22,6 +23,9 @@ const Index = () => {
 
         {/* Vision State - Future Self */}
         <FutureSelfGallery />
+
+        {/* My Playlist - After Vision State */}
+        <MyPlaylist />
 
         {/* Reality State - Past Self */}
         <PastSelfGallery />
