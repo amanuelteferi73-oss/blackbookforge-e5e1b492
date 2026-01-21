@@ -5,6 +5,7 @@ export interface PlaylistTrack {
   id: string;
   url: string;
   name: string;
+  lyrics: string | null;
   createdAt: string;
 }
 
@@ -24,9 +25,9 @@ export function usePlaylist() {
       // Fetch user's playlist tracks from assets table
       const { data: assets, error } = await supabase
         .from('assets')
-        .select('id, file_path, name, created_at')
+        .select('id, file_path, name, content, created_at')
         .eq('user_id', user.id)
-        .eq('category', 'dream') // Using 'dream' category for playlist
+        .eq('category', 'dream')
         .eq('type', 'audio')
         .order('created_at', { ascending: true });
 
@@ -48,6 +49,7 @@ export function usePlaylist() {
             id: asset.id,
             url: publicUrl,
             name: asset.name || 'Untitled Track',
+            lyrics: asset.content || null,
             createdAt: asset.created_at,
           };
         });
@@ -64,7 +66,7 @@ export function usePlaylist() {
     loadTracks();
   }, [loadTracks]);
 
-  const uploadTrack = async (file: File): Promise<boolean> => {
+  const uploadTrack = async (file: File, lyrics?: string): Promise<boolean> => {
     setIsUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -90,15 +92,16 @@ export function usePlaylist() {
         return false;
       }
 
-      // Create asset record with original name
+      // Create asset record with original name and lyrics
       const { error: insertError } = await supabase
         .from('assets')
         .insert({
           user_id: user.id,
-          category: 'dream', // Using 'dream' category for playlist
+          category: 'dream',
           type: 'audio',
           file_path: fileName,
           name: originalName,
+          content: lyrics?.trim() || null, // Store lyrics in content field
         });
 
       if (insertError) {
