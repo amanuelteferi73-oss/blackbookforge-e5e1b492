@@ -5,6 +5,9 @@ import { WEEK_1_DATA } from '@/lib/floorWeek1Data';
 import { WEEK_2_DATA } from '@/lib/floorWeek2Data';
 import { WEEK_3_DATA } from '@/lib/floorWeek3Data';
 import { WEEK_4_DATA } from '@/lib/floorWeek4Data';
+import { WEEK_5_DATA } from '@/lib/floorWeek5Data';
+import { WEEK_6_DATA } from '@/lib/floorWeek6Data';
+import { WEEK_7_DATA } from '@/lib/floorWeek7Data';
 
 export interface FloorDay {
   id: string;
@@ -37,7 +40,7 @@ export interface FloorTimer {
 }
 
 // All week data for initialization
-const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA, WEEK_3_DATA, WEEK_4_DATA];
+const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA, WEEK_3_DATA, WEEK_4_DATA, WEEK_5_DATA, WEEK_6_DATA, WEEK_7_DATA];
 
 export function useFloor() {
   const { user } = useAuth();
