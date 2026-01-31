@@ -1,107 +1,224 @@
 
 
-# Month 2: The Floor Expansion Plan
+# Implementation Plan: Auto-Start Floor Timer + New Discipline Rules
 
 ## Overview
 
-You've completed Month 1 with your startup built and an automated email outreach system ready. Now we're adding Weeks 5, 6, and 7 to The Floor for aggressive marketing, web dev service integration, and investor/revenue acquisition.
+This plan covers two major changes:
+
+1. **Auto-Start Floor Timer System**: Convert from manual timer starts to automatic midnight starts. Users must STOP the timer before it expires (24 hours), otherwise they receive 0 score and automatic punishment.
+
+2. **New Discipline Rules in Check-In**: Replace the Dan Martell mantras with 37 new personal rules. These rules become part of the daily check-in under Section F (Discipline Locks), with each rule being a checkable item contributing to the score.
 
 ---
 
-## Week 5: Marketing Blitz & Outreach Domination
+## Part 1: Auto-Start Floor Timer System
 
-**Objective:** Flood your target market with outreach. Build unstoppable momentum through your automated email system. Volume creates clarity. This week is about raw action, not optimization.
+### Current Behavior
+- User manually clicks "Start Day Execution" to begin a 24-hour timer
+- Timer counts down to zero
+- No automatic consequences when timer expires
 
-**Focus Split:** Startup Marketing (100%) — Email templates, list building, mass outreach execution
+### New Behavior
+- Timer automatically starts at **midnight UTC** (00:00:00) each day
+- Timer runs for 24 hours until 23:59:59
+- User's job is to **STOP** the timer by completing their check-in before midnight
+- If timer reaches zero without check-in:
+  - Score for that day = **0%**
+  - Punishment is **automatically triggered**
+  - Check-in becomes locked with "Timer Expired" status
 
-**Success Condition:** By week end: 3,500+ emails sent | Response patterns identified | Zero days with under 500 outreach | System running without manual intervention
+### Technical Implementation
 
-| Day | Title | Intent | Actions | Rules |
-|-----|-------|--------|---------|-------|
-| 29 | TEMPLATE PERFECTION & SYSTEM LOCK | Making sure the weapon is sharp before firing | 1. Write 3 email template variations 2. A/B test subject lines mentally 3. Prepare first batch of 500 target emails 4. Test system with 10 emails to verify delivery | No outreach yet. Only preparation. |
-| 30 | FIRST WAVE — 500 CONTACTS | Breaking the fear of scale | 1. Load 500 emails into the system 2. Send first wave 3. Monitor delivery rates 4. Document any bounces or issues | Once sent, no editing. Only observation. |
-| 31 | SECOND WAVE — 750 CONTACTS | Building momentum through repetition | 1. Prepare next 750 target emails 2. Send second wave 3. Review any responses from Day 30 4. Log response patterns | No responding to leads yet. Only logging. |
-| 32 | THIRD WAVE — 1000 CONTACTS | Proving you can handle volume | 1. Scale to 1000 emails 2. Send third wave 3. Start categorizing responses: hot / warm / cold 4. Refine template based on patterns | Volume over perfection. |
-| 33 | RESPONSE REVIEW & TEMPLATE REFINEMENT | Learning from reality | 1. Analyze all responses received so far 2. Identify which template performed best 3. Create refined template v2 4. Prepare 750 emails for next wave | No new outreach today. Only analysis. |
-| 34 | FOURTH WAVE — 750 CONTACTS + FOLLOW-UP PREP | Sustained pressure | 1. Send 750 with refined template 2. Draft follow-up template for non-responders 3. Categorize leads into tiers 4. Begin lead tracking spreadsheet | Follow-up is just as important as first contact. |
-| 35 | WEEK 5 CLOSE: OUTREACH AUDIT | Taking stock of the flood | 1. Audit: Total emails sent | Response rate | Best template 2. Write one paragraph: "I am no longer afraid of volume." 3. Document top 10 leads to nurture 4. Prepare for Week 6 dual-track focus | If week completed: #29 — VOLUME MACHINE UNLOCKED |
+#### 1. Backend Edge Function: `floor-timer-check`
+Create a new edge function that:
+- Runs automatically (can be triggered via cron or on app load)
+- For the current day, ensures a timer exists starting at midnight
+- Checks for expired timers from previous day and applies penalties
+
+```
+supabase/functions/floor-timer-check/index.ts
+```
+
+**Logic:**
+1. Get current day number from system time
+2. Find the floor_day matching that day number for the user
+3. Check if timer exists for that day
+4. If no timer exists, create one with:
+   - `started_at`: Midnight of current day (UTC)
+   - `ends_at`: 23:59:59 of current day (UTC)
+   - `is_active`: true
+5. Check yesterday's timer - if expired and no check-in submitted, create a "missed" check-in with 0 score and trigger punishment
+
+#### 2. Modify `useFloor.ts` Hook
+- Remove the manual `startDayTimer` function
+- Add `checkAndInitializeDayTimer()` that calls the edge function
+- Add `stopDayTimer(dayId)` function for completing the day
+
+#### 3. Modify Timer Database Logic
+- Timers will be created automatically at midnight
+- Timer can be "stopped" by submitting a valid check-in
+- Add a `stopped_at` column to `floor_timers` table (optional enhancement)
+
+#### 4. Modify `DayTimer.tsx` Component
+- Remove "Start Day Execution" button
+- Show countdown always (timer auto-started)
+- Add "Complete Day" button that stops the timer (links to check-in)
+- Show expiration warning when time is low
+
+#### 5. Modify Check-In Flow
+- When check-in is submitted, mark the floor timer as completed
+- If timer already expired, block submission and show "Timer Expired" message
+
+#### 6. Database Changes
+Add new column to track timer completion:
+```sql
+ALTER TABLE floor_timers ADD COLUMN stopped_at TIMESTAMPTZ NULL;
+ALTER TABLE floor_timers ADD COLUMN auto_started BOOLEAN DEFAULT true;
+```
 
 ---
 
-## Week 6: Dual-Track Execution (Marketing + Web Dev Services)
+## Part 2: New Discipline Rules in Check-In
 
-**Objective:** Maintain startup outreach momentum while reactivating web development services for immediate cash flow. Prove you can operate two engines simultaneously without collapse.
+### Current Behavior
+- Dan Martell's 9 mantras shown in CoreStatement dropdown
+- Section F (Discipline Locks) has 2 questions worth 14 points total
 
-**Focus Split:** Startup Marketing (70%) — Continue outreach + lead nurturing | Web Dev Services (30%) — Local pitching for 2 days + service offers
+### New Behavior
+- Replace Dan Martell mantras with 37 personal rules in CoreStatement
+- These same 37 rules appear as checkable items in check-in
+- Each rule must be checked daily as part of discipline compliance
+- Points distributed: 14 points across 37 rules (approximately 0.38 per rule, rounded)
 
-**Success Condition:** By week end: 2,500+ additional emails sent | 2 days of web dev pitching completed | At least 1 warm lead from services | No drop in startup momentum
+### The 37 Rules (Parsed from user input)
 
-| Day | Title | Intent | Actions | Rules |
-|-----|-------|--------|---------|-------|
-| 36 | OUTREACH CONTINUATION — 750 CONTACTS | Proving consistency across weeks | 1. Load fresh 750 emails 2. Send using best-performing template 3. Review responses from Week 5 4. Update lead tracking | Momentum does not pause between weeks. |
-| 37 | WEB DEV SERVICE DAY #1 | Activating the cash engine | 1. Go out and pitch local businesses 2. Focus on: websites, redesigns, digital presence 3. Collect 5+ business contacts 4. Evening: review startup responses only | Service work is survival. Startup work is future. |
-| 38 | WEB DEV SERVICE DAY #2 + FOLLOW-UPS | Doubling down on cash opportunities | 1. Second day of local pitching 2. Send follow-up emails to Day 37 contacts 3. Prepare service proposal template 4. Evening: log all web dev leads separately | Cash discipline keeps the machine alive. |
-| 39 | STARTUP FOCUS — 1000 CONTACTS + LEAD NURTURING | Returning to primary mission | 1. Send 1000 emails to fresh list 2. Follow up with warm leads from previous weeks 3. Personalize 5 high-priority responses 4. No web dev work today | Startup is the priority. Services are the buffer. |
-| 40 | STARTUP FOCUS — 750 CONTACTS + SYSTEMS CHECK | Maintaining pressure without burnout | 1. Send 750 emails 2. Audit email system health: deliverability, bounces 3. Clean email list of dead addresses 4. Prepare investor outreach list for Week 7 | System maintenance prevents future collapse. |
-| 41 | DUAL-TRACK AUDIT DAY | Understanding both machines | 1. Audit startup: total outreach, response rate, top leads 2. Audit services: leads collected, proposals sent, potential revenue 3. Create clear separation document 4. No outreach today—only analysis | Clarity prevents context-switching chaos. |
-| 42 | WEEK 6 CLOSE: BALANCE PROOF | Proving multi-engine capability | 1. Write: "I can run two engines. Neither collapsed." 2. Document: Best startup lead | Best service lead 3. Set intention for Week 7: revenue focus 4. Rest and reset | If week completed: #30 — DUAL-ENGINE OPERATOR |
+1. Pick the hardest build, learn and do
+2. Feel the pain all the way - this is what can make you who you wanna be
+3. I don't see the reason you are f*cking giving up, there is no option
+4. We can have it all - pick them wisely and show me just doing it
+5. This time crushing it not small task
+6. Order is our schema - ain't we got it after 6 we are still here not there
+7. You need consistence ain't fuel
+8. Everything is gonna be your fault - not even a single complain of country or situation
+9. Private success lead to victory not vice versa
+10. This is just start not the end
+11. World won't go anywhere unless we stayed tune - so do it, don't wanna see you sleeping
+12. Follow one niche this time - I don't see any reason it is gonna fail
+13. Have a fuel you can put on fire which is the agent we are building
+14. Don't spend your time with taker not giver
+15. For the responsibility problem we are gonna blame anyone
+16. Don't be a f*cking prisoner to any of them - enjoy doing them
+17. Don't compare yourself with others - you do it with yourself
+18. Always we are positive even in ocean
+19. Protect your mind not only growing it
+20. Control what you can if what you can't
+21. Speeeeeeeeeeeeeed - we are robot ok, not human anymore
+22. Ignore what others think about you
+23. We are always ambitious to listen that car sound, to live there, to make them shout their mouth
+24. Prioritize your health
+25. Keep your promise to be Elon Musk and Masayoshi Son
+26. Thanks to our situation - not enjoyment for us yet even if we are young
+27. Fail is a f*cking master - you will call it soon a legendary
+28. Winners don't quit, quitters never win
+29. We are not rich yet - don't give even a single penny
+30. Don't f*cking fear money - cause if it can make you broke it can make you rich too
+31. One victory covers all the failure
+32. Money is the tool not the goal
+33. Your network is your networth
+34. If dad ain't drop it so who can you call yourself?
+35. Build the system then you will see how it matter
+36. Next stop will be on billions not even millions
+37. Luck is when preparation meets opportunity so don't wait for it - show me who you are
+
+### Technical Implementation
+
+#### 1. Update `CoreStatement.tsx`
+Replace `DAILY_MANTRAS` array with the new 37 rules:
+- Each rule has a title (the rule itself)
+- Description can be a motivational extension or left minimal
+
+#### 2. Create New Discipline Rules Data File
+```
+src/lib/disciplineRules.ts
+```
+
+Contains the 37 rules as a constant array that can be imported by both CoreStatement and the check-in system.
+
+#### 3. Modify Check-In Section F
+Current Section F has 2 questions worth 14 points:
+- F1: "Fully complied with all binary discipline rules?" (8 points)
+- F2: "Shut down temptations immediately?" (6 points)
+
+**New approach options:**
+
+**Option A: Keep F simple, add new Section R (Rules)**
+- Keep Section F as-is (2 questions, 14 points)
+- Add new Section R (Discipline Rules) with 37 checkable rules
+- Each rule worth a small point value (14 additional points total)
+
+**Option B: Expand Section F with all 37 rules**
+- Replace the 2 questions with 37 individual rules
+- Distribute 14 points across all 37 rules
+- This keeps total max points the same
+
+**Recommended: Option A** - Add a new section specifically for rules to keep scoring clean.
+
+#### 4. Modify `checkInSections.ts`
+Add new section with the 37 discipline rules as questions:
+```typescript
+{
+  id: 'R',
+  title: 'Daily Discipline Rules',
+  maxPoints: 14,
+  isCritical: true, // Breaking rules triggers discipline breach
+  questions: [
+    // 37 rules as questions
+  ],
+}
+```
+
+#### 5. Update EnforcementCheckIn.tsx
+- Ensure the new section R is rendered
+- Rules appear as checkable items
+- All 37 must be checked for full points
 
 ---
 
-## Week 7: Investor Outreach & First Revenue
+## Files to Create
 
-**Objective:** Transform all previous work into tangible outcomes. Find angel investors, close first deals, and hit $100+ revenue. This week separates builders from sellers.
+| File | Purpose |
+|------|---------|
+| `supabase/functions/floor-timer-check/index.ts` | Edge function to auto-start daily timers and check expired timers |
+| `src/lib/disciplineRules.ts` | The 37 discipline rules as a constant array |
 
-**Focus Split:** Investor Outreach (40%) — Targeted angel/VC contacts | Revenue Generation (40%) — Close startup leads OR web dev clients | System Hardening (20%) — Payment integration + pitch refinement
+## Files to Modify
 
-**Success Condition:** By week end: 10+ investor contacts made | First paying customer acquired | $100+ revenue generated | Payment system live and functional
+| File | Changes |
+|------|---------|
+| `src/hooks/useFloor.ts` | Remove manual startDayTimer, add auto-timer initialization |
+| `src/components/floor/DayTimer.tsx` | Remove start button, always show countdown, add complete button |
+| `src/components/floor/DayDetailPanel.tsx` | Update timer section behavior |
+| `src/components/CoreStatement.tsx` | Replace DAILY_MANTRAS with new 37 rules |
+| `src/lib/checkInSections.ts` | Add new Section R with 37 discipline rule questions |
+| `src/components/enforcement/EnforcementCheckIn.tsx` | Handle new discipline rules section |
 
-| Day | Title | Intent | Actions | Rules |
-|-----|-------|--------|---------|-------|
-| 43 | INVESTOR LIST BUILDING | Knowing who holds the keys | 1. Research and list 50 angel investors in your niche 2. Find their email or LinkedIn 3. Categorize by: accessibility, relevance, check size 4. Draft investor pitch email | No reaching out yet. Only research. |
-| 44 | PAYMENT INTEGRATION DAY | Making money possible | 1. Integrate payment system into startup 2. Test payment flow end-to-end 3. Set up first pricing tier 4. Verify funds can be received | No sales until payment works. |
-| 45 | INVESTOR OUTREACH #1 — 15 CONTACTS | Opening doors | 1. Send personalized emails to 15 investors 2. Include: one-liner, traction, ask 3. Log each outreach 4. Continue nurturing warm startup leads | Investors respect builders who are also selling. |
-| 46 | REVENUE PUSH DAY #1 | First real money | 1. Contact top 5 warmest startup leads 2. Make direct offer: trial / discounted / early access 3. Contact top 3 web dev leads with proposals 4. Follow up relentlessly | Today is about closing, not opening. |
-| 47 | INVESTOR OUTREACH #2 — 15 MORE + FOLLOW-UPS | Sustained investor pressure | 1. Send to 15 new investors 2. Follow up with Day 45 contacts 3. Track responses: meeting requests, rejections, silence 4. Continue revenue push simultaneously | Rejection is data. Silence is normal. |
-| 48 | REVENUE PUSH DAY #2 | The final push | 1. Close at least one deal—startup OR service 2. Ensure payment is received 3. Document first customer journey 4. Celebrate briefly, then prepare for audit | First revenue proves everything. |
-| 49 | WEEK 7 CLOSE: MONTH 2 COMPLETION | You survived. You earned. | 1. Audit: Total investor contacts | Meetings scheduled | Revenue generated 2. Write: "I am no longer a builder. I am a seller." 3. Document Month 2 learnings 4. Plan Month 3 direction | If week completed: #31 — REVENUE UNLOCKED |
+## Database Migration
 
----
-
-## Technical Implementation
-
-### Files to Create
-
-1. **`src/lib/floorWeek5Data.ts`** — Week 5 content: Marketing Blitz
-2. **`src/lib/floorWeek6Data.ts`** — Week 6 content: Dual-Track Execution
-3. **`src/lib/floorWeek7Data.ts`** — Week 7 content: Investor & Revenue
-
-### Files to Modify
-
-1. **`src/hooks/useFloor.ts`**
-   - Import the 3 new week data files
-   - Add them to the `ALL_WEEKS` array
-
-2. **`src/components/floor/WeekSelector.tsx`**
-   - Add new titles to `WEEK_TITLES` mapping:
-     - 5: "Marketing Blitz & Outreach Domination"
-     - 6: "Dual-Track Execution"
-     - 7: "Investor Outreach & First Revenue"
-   - Remove placeholder for week 5
-
-### No Backend Changes Required
-
-The existing `floor_weeks` and `floor_days` tables already support the new weeks. The initialization logic in `useFloor.ts` will automatically create the new weeks when the user loads The Floor.
+```sql
+-- Add columns to track timer completion
+ALTER TABLE floor_timers 
+ADD COLUMN IF NOT EXISTS stopped_at TIMESTAMPTZ NULL,
+ADD COLUMN IF NOT EXISTS auto_started BOOLEAN DEFAULT true;
+```
 
 ---
 
 ## Summary
 
-This plan maintains the exact same structure, appearance, and philosophy of The Floor while adding 3 aggressive new weeks focused on:
+1. **Auto-Timer**: Timers start automatically at midnight each day. User must complete check-in before midnight or face 0 score + punishment.
 
-- **Week 5:** Pure marketing volume (3,500+ emails)
-- **Week 6:** Dual-track with web dev services reactivation
-- **Week 7:** Investor outreach + first revenue target ($100+)
+2. **37 Discipline Rules**: Your personal rules replace Dan Martell's content in the mantra dropdown AND become checkable items in the daily check-in worth 14 points total.
 
-No layout changes. No backend modifications. Just content additions following the locked template.
+Both systems are additive and don't break existing functionality.
 
