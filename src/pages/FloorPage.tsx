@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFloor } from '@/hooks/useFloor';
+import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { WeekSelector } from '@/components/floor/WeekSelector';
 import { DaySelector } from '@/components/floor/DaySelector';
 import { DayDetailPanel } from '@/components/floor/DayDetailPanel';
@@ -7,18 +8,21 @@ import { WeekOverview } from '@/components/floor/WeekOverview';
 import { Loader2 } from 'lucide-react';
 
 export default function FloorPage() {
-  const { weeks, timers, isLoading, startDayTimer } = useFloor();
+  const { weeks, timers, isLoading, checkAndInitializeDayTimer } = useFloor();
+  const timeState = useTimeEngine(60000);
   const [selectedWeekNumber, setSelectedWeekNumber] = useState<number | null>(1);
   const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
 
   const selectedWeek = weeks.find(w => w.week_number === selectedWeekNumber);
   const selectedDay = selectedWeek?.days?.find(d => d.day_number === selectedDayNumber);
 
-  const handleStartTimer = () => {
-    if (selectedDay) {
-      startDayTimer(selectedDay.id);
-    }
-  };
+  // Auto-initialize timer on page load
+  useEffect(() => {
+    checkAndInitializeDayTimer();
+  }, [checkAndInitializeDayTimer]);
+
+  // Check if selected day is current day
+  const isCurrentDay = selectedDay?.day_number === timeState.dayNumber;
 
   if (isLoading) {
     return (
@@ -70,7 +74,7 @@ export default function FloorPage() {
                 <DayDetailPanel 
                   day={selectedDay} 
                   timer={timers[selectedDay.id]}
-                  onStartTimer={handleStartTimer}
+                  isCurrentDay={isCurrentDay}
                 />
               </div>
             )}

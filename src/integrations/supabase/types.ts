@@ -374,30 +374,36 @@ export type Database = {
       }
       floor_timers: {
         Row: {
+          auto_started: boolean | null
           created_at: string
           day_id: string
           ends_at: string
           id: string
           is_active: boolean
           started_at: string
+          stopped_at: string | null
           user_id: string
         }
         Insert: {
+          auto_started?: boolean | null
           created_at?: string
           day_id: string
           ends_at: string
           id?: string
           is_active?: boolean
           started_at?: string
+          stopped_at?: string | null
           user_id: string
         }
         Update: {
+          auto_started?: boolean | null
           created_at?: string
           day_id?: string
           ends_at?: string
           id?: string
           is_active?: boolean
           started_at?: string
+          stopped_at?: string | null
           user_id?: string
         }
         Relationships: [

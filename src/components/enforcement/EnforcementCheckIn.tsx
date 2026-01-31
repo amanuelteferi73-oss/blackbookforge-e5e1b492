@@ -553,6 +553,19 @@ export function EnforcementCheckIn() {
         ))}
       </div>
 
+      {/* Discipline Rules Section R */}
+      <div className="space-y-6">
+        {visibleSections.filter(s => s.id === 'R').map((section) => (
+          <CheckInSection
+            key={section.id}
+            section={section}
+            answers={answers}
+            onToggle={handleToggle}
+            isLocked={false}
+          />
+        ))}
+      </div>
+
       {/* Multi-Pillar Selector */}
       <PillarMultiSelector
         selectedPillars={selectedPillars}

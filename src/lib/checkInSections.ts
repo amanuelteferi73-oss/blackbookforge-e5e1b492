@@ -1,6 +1,8 @@
 // Daily Check-In Sections Configuration
 // This is the IMMUTABLE truth structure - DO NOT MODIFY QUESTION WORDING OR POINTS
 
+import { DISCIPLINE_RULES_SECTION } from './disciplineRules';
+
 // Multi-pillar system: users can select 1-2 pillars per day
 export type PillarType = 'school' | 'startup' | 'cash' | 'floor';
 export type FocusPillar = 'startup' | 'cash' | 'school' | null; // Legacy support
@@ -147,8 +149,10 @@ export const CHECK_IN_SECTIONS: CheckInSection[] = [
       { id: 'I1', text: 'If today repeated for 30 days, would your situation change materially?', points: 5 },
     ],
   },
-];
 
+  // === DISCIPLINE RULES SECTION (Always visible) ===
+  DISCIPLINE_RULES_SECTION,
+];
 // Get sections visible for selected pillars (multi-pillar support)
 export function getVisibleSectionsMulti(selectedPillars: PillarType[]): CheckInSection[] {
   return CHECK_IN_SECTIONS.filter(section => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { WEEK_1_DATA } from '@/lib/floorWeek1Data';
@@ -37,6 +37,8 @@ export interface FloorTimer {
   started_at: string;
   ends_at: string;
   is_active: boolean;
+  stopped_at: string | null;
+  auto_started: boolean;
 }
 
 // All week data for initialization
@@ -161,35 +163,72 @@ export function useFloor() {
     setIsLoading(false);
   };
 
-  // Start timer for a day
-  const startDayTimer = async (dayId: string) => {
+  // Check and initialize today's timer via edge function
+  const checkAndInitializeDayTimer = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      if (!token) return null;
+
+      const response = await supabase.functions.invoke('floor-timer-check', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.error) {
+        console.error('Timer check error:', response.error);
+        return null;
+      }
+
+      // Refresh timer data after check
+      const { data: timersData } = await supabase
+        .from('floor_timers')
+        .select('*')
+        .eq('user_id', user.id);
+
+      const timerMap: Record<string, FloorTimer> = {};
+      timersData?.forEach(timer => {
+        timerMap[timer.day_id] = timer as FloorTimer;
+      });
+      setTimers(timerMap);
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to check timer:', error);
+      return null;
+    }
+  }, [user]);
+
+  // Stop timer (mark as completed)
+  const stopDayTimer = async (dayId: string) => {
     if (!user) return;
 
-    const now = new Date();
-    const endsAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('floor_timers')
-      .upsert({
-        user_id: user.id,
-        day_id: dayId,
-        started_at: now.toISOString(),
-        ends_at: endsAt.toISOString(),
-        is_active: true
-      }, {
-        onConflict: 'user_id,day_id'
+      .update({ 
+        stopped_at: new Date().toISOString(),
+        is_active: false 
       })
-      .select()
-      .single();
+      .eq('user_id', user.id)
+      .eq('day_id', dayId);
 
     if (error) {
-      console.error('Failed to start timer:', error);
+      console.error('Failed to stop timer:', error);
       return;
     }
 
+    // Update local state
     setTimers(prev => ({
       ...prev,
-      [dayId]: data as FloorTimer
+      [dayId]: {
+        ...prev[dayId],
+        stopped_at: new Date().toISOString(),
+        is_active: false,
+      }
     }));
   };
 
@@ -202,6 +241,8 @@ export function useFloor() {
       }
       await initializeWeeks();
       await fetchFloorData();
+      // Check and initialize today's timer
+      await checkAndInitializeDayTimer();
     };
     init();
   }, [user]);
@@ -210,7 +251,8 @@ export function useFloor() {
     weeks,
     timers,
     isLoading,
-    startDayTimer,
+    checkAndInitializeDayTimer,
+    stopDayTimer,
     refetch: fetchFloorData
   };
 }
