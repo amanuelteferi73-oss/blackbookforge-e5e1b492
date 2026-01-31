@@ -5,10 +5,10 @@ import { AlertTriangle, Unlock, ListChecks, Shield } from 'lucide-react';
 interface DayDetailPanelProps {
   day: FloorDay;
   timer: FloorTimer | undefined;
-  onStartTimer: () => void;
+  isCurrentDay: boolean;
 }
 
-export function DayDetailPanel({ day, timer, onStartTimer }: DayDetailPanelProps) {
+export function DayDetailPanel({ day, timer, isCurrentDay }: DayDetailPanelProps) {
   return (
     <div className="space-y-6">
       {/* Day Header */}
@@ -20,7 +20,7 @@ export function DayDetailPanel({ day, timer, onStartTimer }: DayDetailPanelProps
       </div>
 
       {/* Timer Section */}
-      <DayTimer timer={timer} onStartTimer={onStartTimer} />
+      <DayTimer timer={timer} isCurrentDay={isCurrentDay} />
 
       {/* Intent */}
       <div className="space-y-2">
