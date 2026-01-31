@@ -8,6 +8,7 @@ import { Navigation } from "@/components/Navigation";
 import { UserInitProvider } from "@/providers/UserInitProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Preloader } from "@/components/Preloader";
+import { PinLock } from "@/components/PinLock";
 import Index from "./pages/Index";
 import CheckInPage from "./pages/CheckInPage";
 import VaultPage from "./pages/VaultPage";
@@ -22,7 +23,8 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Preloader>
+      <PinLock>
+        <Preloader>
         <UserInitProvider>
           <Toaster />
           <Sonner />
@@ -61,6 +63,7 @@ const App = () => (
           </BrowserRouter>
         </UserInitProvider>
       </Preloader>
+      </PinLock>
     </TooltipProvider>
   </QueryClientProvider>
 );
