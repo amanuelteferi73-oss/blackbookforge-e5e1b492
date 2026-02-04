@@ -4,10 +4,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Canonical definitions (must match backend DB: system_time table)
-// System started January 4, 2026 at 00:00:00 UTC (makes Feb 4 = Day 32 = Week 5 Day 4)
-export const START_DATE = new Date('2026-01-04T00:00:00.000Z');
-export const END_DATE = new Date('2027-01-04T00:00:00.000Z');
+// Canonical definitions (must match backend edge function: system-time)
+// System started January 1, 2026 at 00:00:00 UTC
+// Feb 4 = Day 35 (Jan has 31 days + 4 days in Feb = 35)
+export const START_DATE = new Date('2026-01-01T00:00:00.000Z');
+export const END_DATE = new Date('2027-01-01T00:00:00.000Z');
 export const TOTAL_DURATION_MS = END_DATE.getTime() - START_DATE.getTime();
 export const TOTAL_DAYS = 365;
 
