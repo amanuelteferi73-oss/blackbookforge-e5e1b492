@@ -64,8 +64,14 @@ function getHoursUntilMidnightUTC() {
   return (midnight.getTime() - now.getTime()) / (1000 * 60 * 60);
 }
 
-// Show check-in deadline notification
-function showCheckInReminder(hoursLeft) {
+// Show check-in deadline notification (only if permission granted)
+async function showCheckInReminder(hoursLeft) {
+  // Check permission first
+  if (!self.registration || Notification.permission !== 'granted') {
+    console.log('[SW] Cannot show notification - permission not granted');
+    return;
+  }
+  
   const isUrgent = hoursLeft <= 1;
   const title = isUrgent ? '🔴 URGENT: CHECK-IN DEADLINE' : '⏰ CHECK-IN REMINDER';
   const body = isUrgent 
@@ -87,8 +93,14 @@ function showCheckInReminder(hoursLeft) {
   });
 }
 
-// Show discipline rule notification
-function showDisciplineReminder() {
+// Show discipline rule notification (only if permission granted)
+async function showDisciplineReminder() {
+  // Check permission first
+  if (!self.registration || Notification.permission !== 'granted') {
+    console.log('[SW] Cannot show notification - permission not granted');
+    return;
+  }
+  
   const rule = getRandomRule();
   
   return self.registration.showNotification(`🔥 RULE #${rule.id}`, {
@@ -188,9 +200,9 @@ self.addEventListener('message', (event) => {
   console.log('[SW] Message received:', event.data);
   
   if (event.data.type === 'TEST_CHECKIN') {
-    showCheckInReminder(event.data.hours || 2);
+    event.waitUntil(showCheckInReminder(event.data.hours || 2));
   } else if (event.data.type === 'TEST_DISCIPLINE') {
-    showDisciplineReminder();
+    event.waitUntil(showDisciplineReminder());
   } else if (event.data.type === 'SCHEDULE_NOTIFICATIONS') {
     // Start the notification scheduling
     scheduleNotifications();
