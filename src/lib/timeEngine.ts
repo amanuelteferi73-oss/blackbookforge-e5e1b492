@@ -4,10 +4,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Canonical definitions (must match backend)
-// System started January 1, 2026 at 00:00:00 UTC
-export const START_DATE = new Date('2026-01-01T00:00:00.000Z');
-export const END_DATE = new Date('2027-01-01T00:00:00.000Z');
+// Canonical definitions (must match backend DB: system_time table)
+// System started February 1, 2026 at 00:00:00 UTC (1 year program)
+export const START_DATE = new Date('2026-02-01T00:00:00.000Z');
+export const END_DATE = new Date('2027-02-01T00:00:00.000Z');
 export const TOTAL_DURATION_MS = END_DATE.getTime() - START_DATE.getTime();
 export const TOTAL_DAYS = 365;
 
