@@ -84,11 +84,23 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingTimer) {
+      // Check if timer is expired but still marked active - update it
+      const timerEnd = new Date(existingTimer.ends_at);
+      const timerExpired = now > timerEnd;
+      
+      if (existingTimer.is_active && timerExpired && !existingTimer.stopped_at) {
+        // Timer expired - mark as inactive
+        await supabase
+          .from('floor_timers')
+          .update({ is_active: false })
+          .eq('id', existingTimer.id);
+      }
+      
       // Timer already exists - return it
       return new Response(
         JSON.stringify({ 
           message: 'Timer already exists',
-          timer: existingTimer,
+          timer: { ...existingTimer, is_active: !timerExpired && existingTimer.is_active },
           timerCreated: false 
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,13 +117,16 @@ Deno.serve(async (req) => {
 
     const { data: newTimer, error: timerError } = await supabase
       .from('floor_timers')
-      .insert({
+      .upsert({
         user_id: user.id,
         day_id: floorDay.id,
         started_at: todayMidnight.toISOString(),
         ends_at: todayEnd.toISOString(),
         is_active: true,
         auto_started: true,
+      }, {
+        onConflict: 'user_id,day_id',
+        ignoreDuplicates: true,
       })
       .select()
       .single();

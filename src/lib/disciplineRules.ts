@@ -1,5 +1,6 @@
 // 37 Personal Discipline Rules
 // Used in CoreStatement dropdown and daily check-in Section R
+// Now grouped into 3 categories for easier check-in
 
 export interface DisciplineRule {
   id: number;
@@ -47,19 +48,58 @@ export const DISCIPLINE_RULES: DisciplineRule[] = [
   { id: 37, title: "Luck is when preparation meets opportunity so don't wait for it - show me who you are" },
 ];
 
-// Convert to check-in questions format
-// Total 14 points distributed across 37 rules (approximately 0.38 each, rounded)
+// === GROUPED CATEGORIES FOR CHECK-IN ===
+// 3 categories, ~12-13 rules each, for quick daily verification
+
+export interface RuleCategory {
+  id: string;
+  title: string;
+  description: string;
+  ruleIds: number[];
+  points: number;
+}
+
+export const DISCIPLINE_CATEGORIES: RuleCategory[] = [
+  {
+    id: 'mindset',
+    title: 'Mindset & Mentality',
+    description: 'Staying positive, resilient, and mentally sharp',
+    ruleIds: [2, 3, 8, 10, 16, 17, 18, 19, 20, 22, 27, 28], // 12 rules
+    points: 5,
+  },
+  {
+    id: 'execution',
+    title: 'Execution & Speed',
+    description: 'Taking action, moving fast, building systems',
+    ruleIds: [1, 4, 5, 6, 7, 9, 11, 12, 13, 21, 35, 37], // 12 rules
+    points: 5,
+  },
+  {
+    id: 'wealth',
+    title: 'Wealth & Ambition',
+    description: 'Money mindset, vision, network, and sacrifice',
+    ruleIds: [14, 15, 23, 24, 25, 26, 29, 30, 31, 32, 33, 34, 36], // 13 rules
+    points: 4,
+  },
+];
+
+// Get rules for a specific category
+export function getRulesForCategory(categoryId: string): DisciplineRule[] {
+  const category = DISCIPLINE_CATEGORIES.find(c => c.id === categoryId);
+  if (!category) return [];
+  return DISCIPLINE_RULES.filter(rule => category.ruleIds.includes(rule.id));
+}
+
+// Convert categories to check-in questions format (3 questions, 14 total points)
 export function getDisciplineRulesAsQuestions() {
-  return DISCIPLINE_RULES.map((rule, index) => ({
-    id: `R${rule.id}`,
-    text: rule.title,
-    // Distribute 14 points: first 14 rules get 1 point each, rest get 0
-    // OR we can give fractional: each rule ~0.38 points but round total to 14
-    points: index < 14 ? 1 : 0, // First 14 rules = 1 point each = 14 points total
+  return DISCIPLINE_CATEGORIES.map(category => ({
+    id: `R_${category.id}`,
+    text: `${category.title}: ${category.description}`,
+    points: category.points,
   }));
 }
 
-// For check-in section
+// For check-in section - now 3 category questions instead of 37
 export const DISCIPLINE_RULES_SECTION = {
   id: 'R',
   title: 'Daily Discipline Rules',
@@ -67,3 +107,12 @@ export const DISCIPLINE_RULES_SECTION = {
   isCritical: true,
   questions: getDisciplineRulesAsQuestions(),
 };
+
+// Legacy: Get all individual questions (for backwards compatibility)
+export function getDisciplineRulesAsIndividualQuestions() {
+  return DISCIPLINE_RULES.map((rule, index) => ({
+    id: `R${rule.id}`,
+    text: rule.title,
+    points: index < 14 ? 1 : 0,
+  }));
+}
