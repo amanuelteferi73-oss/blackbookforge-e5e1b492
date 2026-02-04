@@ -49,20 +49,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const startDate = new Date(systemTime.system_start_date);
+    // Use canonical start date Jan 1, 2026 (matching system-time edge function)
+    const SYSTEM_START = new Date('2026-01-01T00:00:00.000Z');
     const now = new Date();
     
-    // Calculate current day number (1-indexed) based on system_start_date from DB
-    const diffMs = now.getTime() - startDate.getTime();
-    const daysSinceStart = Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1;
+    // Calculate current day number (1-indexed)
+    // Feb 4 = 31 (Jan) + 4 = Day 35
+    const diffMs = now.getTime() - SYSTEM_START.getTime();
+    const currentDayNumber = Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1;
     
-    // Calculate which week we're in (1-indexed) and the absolute day number
-    // Week 1 = days 1-7, Week 2 = days 8-14, etc.
-    const currentWeekNumber = Math.ceil(daysSinceStart / 7);
-    // The absolute day number in the floor system (e.g., Week 5 Day 4 = day 32)
-    const currentDayNumber = (currentWeekNumber - 1) * 7 + ((daysSinceStart - 1) % 7) + 1;
-    
-    console.log(`[FLOOR-TIMER] Day since start: ${daysSinceStart}, Week: ${currentWeekNumber}, Floor Day: ${currentDayNumber}`);
+    console.log(`[FLOOR-TIMER] Current day: ${currentDayNumber} (${now.toISOString()})`);
 
     // Find the floor_day for today
     const { data: floorDay } = await supabase
@@ -170,8 +166,8 @@ Deno.serve(async (req) => {
           const timerEnd = new Date(yesterdayTimer.ends_at);
           if (now > timerEnd) {
             // Timer expired - check if check-in was submitted
-            const yesterdayDate = new Date(startDate);
-            yesterdayDate.setDate(startDate.getDate() + yesterdayDayNumber - 1);
+            const yesterdayDate = new Date(SYSTEM_START);
+            yesterdayDate.setDate(SYSTEM_START.getDate() + yesterdayDayNumber - 1);
             const yesterdayKey = yesterdayDate.toISOString().split('T')[0];
 
             const { data: existingCheckIn } = await supabase
