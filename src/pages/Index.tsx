@@ -6,6 +6,7 @@ import { VaultPreview } from '@/components/VaultPreview';
 import { LegacyLock } from '@/components/LegacyLock';
 import { ActiveFloorTimer } from '@/components/dashboard/ActiveFloorTimer';
 import { MyPlaylist } from '@/components/playlist/MyPlaylist';
+import { NotificationSettings } from '@/components/NotificationSettings';
 
 const Index = () => {
   return (
@@ -17,7 +18,10 @@ const Index = () => {
       <ActiveFloorTimer />
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 mt-6">
+      <div className="container mx-auto px-4 mt-6 space-y-6">
+        {/* Notification Settings */}
+        <NotificationSettings />
+
         {/* Status Panel */}
         <StatusPanel />
 
