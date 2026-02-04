@@ -52,9 +52,17 @@ Deno.serve(async (req) => {
     const startDate = new Date(systemTime.system_start_date);
     const now = new Date();
     
-    // Calculate current day number (1-indexed)
+    // Calculate current day number (1-indexed) based on system_start_date from DB
     const diffMs = now.getTime() - startDate.getTime();
-    const currentDayNumber = Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1;
+    const daysSinceStart = Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1;
+    
+    // Calculate which week we're in (1-indexed) and the absolute day number
+    // Week 1 = days 1-7, Week 2 = days 8-14, etc.
+    const currentWeekNumber = Math.ceil(daysSinceStart / 7);
+    // The absolute day number in the floor system (e.g., Week 5 Day 4 = day 32)
+    const currentDayNumber = (currentWeekNumber - 1) * 7 + ((daysSinceStart - 1) % 7) + 1;
+    
+    console.log(`[FLOOR-TIMER] Day since start: ${daysSinceStart}, Week: ${currentWeekNumber}, Floor Day: ${currentDayNumber}`);
 
     // Find the floor_day for today
     const { data: floorDay } = await supabase
