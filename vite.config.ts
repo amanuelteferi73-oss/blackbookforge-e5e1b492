@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: null,
       manifest: {
@@ -41,10 +44,8 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        navigateFallback: '/index.html',
-        cleanupOutdatedCaches: true
+      injectManifest: {
+        injectionPoint: undefined
       },
       devOptions: {
         enabled: true
