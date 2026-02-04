@@ -1,187 +1,142 @@
 
 
-# Implementation Plan: Auto-Start Floor Timer + New Discipline Rules
+# Push Notifications Implementation Plan
 
 ## Overview
 
-This plan covers two major changes:
+This plan adds a complete notification system to FORGE that works on your Samsung A11 device. The system provides two distinct notification types:
 
-1. **Auto-Start Floor Timer System**: Convert from manual timer starts to automatic midnight starts. Users must STOP the timer before it expires (24 hours), otherwise they receive 0 score and automatic punishment.
-
-2. **New Discipline Rules in Check-In**: Replace the Dan Martell mantras with 37 new personal rules. These rules become part of the daily check-in under Section F (Discipline Locks), with each rule being a checkable item contributing to the score.
-
----
-
-## Part 1: Auto-Start Floor Timer System
-
-### Current Behavior
-- User manually clicks "Start Day Execution" to begin a 24-hour timer
-- Timer counts down to zero
-- No automatic consequences when timer expires
-
-### New Behavior
-- Timer automatically starts at **midnight UTC** (00:00:00) each day
-- Timer runs for 24 hours until 23:59:59
-- User's job is to **STOP** the timer by completing their check-in before midnight
-- If timer reaches zero without check-in:
-  - Score for that day = **0%**
-  - Punishment is **automatically triggered**
-  - Check-in becomes locked with "Timer Expired" status
-
-### Technical Implementation
-
-#### 1. Backend Edge Function: `floor-timer-check`
-Create a new edge function that:
-- Runs automatically (can be triggered via cron or on app load)
-- For the current day, ensures a timer exists starting at midnight
-- Checks for expired timers from previous day and applies penalties
-
-```
-supabase/functions/floor-timer-check/index.ts
-```
-
-**Logic:**
-1. Get current day number from system time
-2. Find the floor_day matching that day number for the user
-3. Check if timer exists for that day
-4. If no timer exists, create one with:
-   - `started_at`: Midnight of current day (UTC)
-   - `ends_at`: 23:59:59 of current day (UTC)
-   - `is_active`: true
-5. Check yesterday's timer - if expired and no check-in submitted, create a "missed" check-in with 0 score and trigger punishment
-
-#### 2. Modify `useFloor.ts` Hook
-- Remove the manual `startDayTimer` function
-- Add `checkAndInitializeDayTimer()` that calls the edge function
-- Add `stopDayTimer(dayId)` function for completing the day
-
-#### 3. Modify Timer Database Logic
-- Timers will be created automatically at midnight
-- Timer can be "stopped" by submitting a valid check-in
-- Add a `stopped_at` column to `floor_timers` table (optional enhancement)
-
-#### 4. Modify `DayTimer.tsx` Component
-- Remove "Start Day Execution" button
-- Show countdown always (timer auto-started)
-- Add "Complete Day" button that stops the timer (links to check-in)
-- Show expiration warning when time is low
-
-#### 5. Modify Check-In Flow
-- When check-in is submitted, mark the floor timer as completed
-- If timer already expired, block submission and show "Timer Expired" message
-
-#### 6. Database Changes
-Add new column to track timer completion:
-```sql
-ALTER TABLE floor_timers ADD COLUMN stopped_at TIMESTAMPTZ NULL;
-ALTER TABLE floor_timers ADD COLUMN auto_started BOOLEAN DEFAULT true;
-```
+1. **Check-In Deadline Reminders** - Critical alerts at 3 hours, 2 hours, and 1 hour before your daily timer expires (before midnight UTC)
+2. **Hourly Discipline Rule Reminders** - Motivational notifications every hour featuring one of your 37 rules
 
 ---
 
-## Part 2: New Discipline Rules in Check-In
+## How It Will Work
 
-### Current Behavior
-- Dan Martell's 9 mantras shown in CoreStatement dropdown
-- Section F (Discipline Locks) has 2 questions worth 14 points total
+### Notification Permission Flow
+1. A new "Notifications" section appears on the Dashboard
+2. Tapping "Enable Notifications" requests browser permission
+3. Once granted, notifications are automatically scheduled
+4. Status shows whether notifications are active or disabled
 
-### New Behavior
-- Replace Dan Martell mantras with 37 personal rules in CoreStatement
-- These same 37 rules appear as checkable items in check-in
-- Each rule must be checked daily as part of discipline compliance
-- Points distributed: 14 points across 37 rules (approximately 0.38 per rule, rounded)
+### Check-In Reminders
+- **3 hours before midnight** (9:00 PM UTC): "Check-In Deadline in 3 hours"
+- **2 hours before midnight** (10:00 PM UTC): "Check-In Deadline in 2 hours"
+- **1 hour before midnight** (11:00 PM UTC): "URGENT: 1 hour remaining!"
 
-### The 37 Rules (Parsed from user input)
+Visual style: Red/amber urgent alerts with the FORGE icon
 
-1. Pick the hardest build, learn and do
-2. Feel the pain all the way - this is what can make you who you wanna be
-3. I don't see the reason you are f*cking giving up, there is no option
-4. We can have it all - pick them wisely and show me just doing it
-5. This time crushing it not small task
-6. Order is our schema - ain't we got it after 6 we are still here not there
-7. You need consistence ain't fuel
-8. Everything is gonna be your fault - not even a single complain of country or situation
-9. Private success lead to victory not vice versa
-10. This is just start not the end
-11. World won't go anywhere unless we stayed tune - so do it, don't wanna see you sleeping
-12. Follow one niche this time - I don't see any reason it is gonna fail
-13. Have a fuel you can put on fire which is the agent we are building
-14. Don't spend your time with taker not giver
-15. For the responsibility problem we are gonna blame anyone
-16. Don't be a f*cking prisoner to any of them - enjoy doing them
-17. Don't compare yourself with others - you do it with yourself
-18. Always we are positive even in ocean
-19. Protect your mind not only growing it
-20. Control what you can if what you can't
-21. Speeeeeeeeeeeeeed - we are robot ok, not human anymore
-22. Ignore what others think about you
-23. We are always ambitious to listen that car sound, to live there, to make them shout their mouth
-24. Prioritize your health
-25. Keep your promise to be Elon Musk and Masayoshi Son
-26. Thanks to our situation - not enjoyment for us yet even if we are young
-27. Fail is a f*cking master - you will call it soon a legendary
-28. Winners don't quit, quitters never win
-29. We are not rich yet - don't give even a single penny
-30. Don't f*cking fear money - cause if it can make you broke it can make you rich too
-31. One victory covers all the failure
-32. Money is the tool not the goal
-33. Your network is your networth
-34. If dad ain't drop it so who can you call yourself?
-35. Build the system then you will see how it matter
-36. Next stop will be on billions not even millions
-37. Luck is when preparation meets opportunity so don't wait for it - show me who you are
+### Discipline Rule Reminders
+- Sent every hour on the hour
+- Randomly picks one of the 37 rules
+- Clean, motivational design with your personal branding
 
-### Technical Implementation
+---
 
-#### 1. Update `CoreStatement.tsx`
-Replace `DAILY_MANTRAS` array with the new 37 rules:
-- Each rule has a title (the rule itself)
-- Description can be a motivational extension or left minimal
+## Technical Implementation
 
-#### 2. Create New Discipline Rules Data File
-```
-src/lib/disciplineRules.ts
-```
+### 1. Install PWA Plugin
 
-Contains the 37 rules as a constant array that can be imported by both CoreStatement and the check-in system.
+Add `vite-plugin-pwa` to enable service worker and PWA manifest:
 
-#### 3. Modify Check-In Section F
-Current Section F has 2 questions worth 14 points:
-- F1: "Fully complied with all binary discipline rules?" (8 points)
-- F2: "Shut down temptations immediately?" (6 points)
-
-**New approach options:**
-
-**Option A: Keep F simple, add new Section R (Rules)**
-- Keep Section F as-is (2 questions, 14 points)
-- Add new Section R (Discipline Rules) with 37 checkable rules
-- Each rule worth a small point value (14 additional points total)
-
-**Option B: Expand Section F with all 37 rules**
-- Replace the 2 questions with 37 individual rules
-- Distribute 14 points across all 37 rules
-- This keeps total max points the same
-
-**Recommended: Option A** - Add a new section specifically for rules to keep scoring clean.
-
-#### 4. Modify `checkInSections.ts`
-Add new section with the 37 discipline rules as questions:
 ```typescript
-{
-  id: 'R',
-  title: 'Daily Discipline Rules',
-  maxPoints: 14,
-  isCritical: true, // Breaking rules triggers discipline breach
-  questions: [
-    // 37 rules as questions
-  ],
-}
+// vite.config.ts
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'FORGE',
+        short_name: 'FORGE',
+        description: 'Private execution system for discipline',
+        theme_color: '#0a0a0a',
+        background_color: '#0a0a0a',
+        display: 'standalone',
+        icons: [
+          { src: '/favicon.png', sizes: '192x192', type: 'image/png' },
+          { src: '/apple-touch-icon.png', sizes: '512x512', type: 'image/png' }
+        ]
+      },
+      workbox: {
+        // Service worker configuration
+      }
+    })
+  ]
+})
 ```
 
-#### 5. Update EnforcementCheckIn.tsx
-- Ensure the new section R is rendered
-- Rules appear as checkable items
-- All 37 must be checked for full points
+### 2. Create Custom Service Worker
+
+```
+public/sw.js
+```
+
+The service worker handles:
+- Background notification scheduling
+- Periodic sync for hourly reminders
+- Push event listeners
+- Notification click handling (opens app)
+
+### 3. Create Notification Manager Hook
+
+```
+src/hooks/useNotifications.ts
+```
+
+Provides:
+- `requestPermission()` - Ask for notification access
+- `isSupported` - Check if device supports notifications
+- `isEnabled` - Current permission status
+- `scheduleCheckInReminders()` - Set up deadline alerts
+- `scheduleHourlyDiscipline()` - Set up rule reminders
+
+### 4. Create Notification Settings Component
+
+```
+src/components/NotificationSettings.tsx
+```
+
+Dashboard widget showing:
+- Enable/Disable toggle
+- Permission status
+- Last notification sent
+- Manual test button
+
+### 5. Create Notification Service
+
+```
+src/lib/notificationService.ts
+```
+
+Core functions:
+- `showNotification(title, options)` - Display a notification
+- `getRandomDisciplineRule()` - Pick a rule for hourly reminder
+- `getTimeUntilDeadline()` - Calculate hours until midnight
+
+### 6. Create Edge Function for Push Subscriptions
+
+```
+supabase/functions/push-subscribe/index.ts
+```
+
+Stores push subscription endpoints in the database for potential server-triggered notifications in the future.
+
+### 7. Database Table for Push Subscriptions
+
+```sql
+CREATE TABLE push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, endpoint)
+);
+```
 
 ---
 
@@ -189,36 +144,83 @@ Add new section with the 37 discipline rules as questions:
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/floor-timer-check/index.ts` | Edge function to auto-start daily timers and check expired timers |
-| `src/lib/disciplineRules.ts` | The 37 discipline rules as a constant array |
+| `public/sw.js` | Custom service worker for scheduling notifications |
+| `src/hooks/useNotifications.ts` | React hook for notification management |
+| `src/lib/notificationService.ts` | Core notification logic and scheduling |
+| `src/components/NotificationSettings.tsx` | UI for enabling/managing notifications |
+| `supabase/functions/push-subscribe/index.ts` | Store push subscription data |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/hooks/useFloor.ts` | Remove manual startDayTimer, add auto-timer initialization |
-| `src/components/floor/DayTimer.tsx` | Remove start button, always show countdown, add complete button |
-| `src/components/floor/DayDetailPanel.tsx` | Update timer section behavior |
-| `src/components/CoreStatement.tsx` | Replace DAILY_MANTRAS with new 37 rules |
-| `src/lib/checkInSections.ts` | Add new Section R with 37 discipline rule questions |
-| `src/components/enforcement/EnforcementCheckIn.tsx` | Handle new discipline rules section |
+| `vite.config.ts` | Add vite-plugin-pwa configuration |
+| `index.html` | Add manifest link |
+| `src/main.tsx` | Register service worker |
+| `src/pages/Index.tsx` | Add NotificationSettings component |
+| `package.json` | Add vite-plugin-pwa dependency |
 
-## Database Migration
+---
 
-```sql
--- Add columns to track timer completion
-ALTER TABLE floor_timers 
-ADD COLUMN IF NOT EXISTS stopped_at TIMESTAMPTZ NULL,
-ADD COLUMN IF NOT EXISTS auto_started BOOLEAN DEFAULT true;
+## Notification Designs
+
+### Check-In Deadline Reminder
+```text
++------------------------------------------+
+| 🔴 FORGE                                 |
+|------------------------------------------|
+| ⏰ CHECK-IN DEADLINE                     |
+|                                          |
+| You have 2 HOURS remaining.              |
+| Complete your check-in now or face       |
+| automatic failure.                       |
+|                                          |
+| [Tap to open FORGE]                      |
++------------------------------------------+
 ```
+
+### Hourly Discipline Rule
+```text
++------------------------------------------+
+| 🔥 FORGE                                 |
+|------------------------------------------|
+| RULE #21                                 |
+|                                          |
+| Speeeeeeeeeeeeeed - we are robot ok,     |
+| not human anymore                        |
+|                                          |
+| Remember who you are becoming.           |
++------------------------------------------+
+```
+
+---
+
+## Installation Flow for Samsung A11
+
+1. Open FORGE in Chrome browser
+2. Tap the notification toggle on the Dashboard
+3. Chrome prompts "Allow notifications from this site?"
+4. Tap "Allow"
+5. Notifications are now active
+
+For best experience, also install FORGE as a PWA:
+1. Open Chrome menu (3 dots)
+2. Tap "Add to Home screen"
+3. FORGE appears as an app icon
 
 ---
 
 ## Summary
 
-1. **Auto-Timer**: Timers start automatically at midnight each day. User must complete check-in before midnight or face 0 score + punishment.
+This implementation adds a complete notification system that:
 
-2. **37 Discipline Rules**: Your personal rules replace Dan Martell's content in the mantra dropdown AND become checkable items in the daily check-in worth 14 points total.
+- Works on Android Chrome (Samsung A11 compatible)
+- Requires no external push notification service
+- Uses the Web Notifications API and Service Workers
+- Sends check-in reminders at 3h, 2h, and 1h before midnight
+- Sends hourly discipline rule reminders
+- Has clean, branded notification designs
+- Stores subscription data for future server-push capabilities
 
-Both systems are additive and don't break existing functionality.
+The system is entirely client-side for the hourly reminders (service worker scheduling) and check-in deadline alerts, ensuring notifications work even when the app tab is closed.
 
