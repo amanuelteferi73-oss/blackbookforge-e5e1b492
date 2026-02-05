@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Lock, Loader2, Mail, KeyRound, ArrowRight, Chrome } from 'lucide-react';
-import { toast } from 'sonner';
-import { z } from 'zod';
-import { Separator } from '@/components/ui/separator';
+ import { useState, useEffect } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ import { supabase } from '@/integrations/supabase/client';
+ import { lovable } from '@/integrations/lovable/index';
+ import { Button } from '@/components/ui/button';
+ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+ import { Lock, Loader2, Mail, KeyRound, ArrowRight } from 'lucide-react';
+ import { toast } from 'sonner';
+ import { z } from 'zod';
+ import { Separator } from '@/components/ui/separator';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -22,28 +23,49 @@ export default function AuthPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
+    let isMounted = true;
+    
+    // Clear any stale session on mount if there's an error
+    const clearStaleSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.log('[AuthPage] Clearing stale session due to error:', error.message);
+          await supabase.auth.signOut();
+        } else if (session && isMounted) {
+          console.log('[AuthPage] Already have valid session, redirecting');
+          navigate('/', { replace: true });
+          return;
+        }
+      } catch (e) {
+        console.error('[AuthPage] Error checking session:', e);
+        // Try to clear any corrupted state
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // Ignore
+        }
+      }
+      if (isMounted) {
+        setCheckingAuth(false);
+      }
+    };
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthPage] Auth state change:', event);
       if (event === 'SIGNED_IN' && session) {
         navigate('/', { replace: true });
       }
-      if (event === 'INITIAL_SESSION') {
-        if (session) {
-          navigate('/', { replace: true });
-        }
-        setCheckingAuth(false);
-      }
     });
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/', { replace: true });
-      }
-      setCheckingAuth(false);
-    });
+    // THEN check/clear session
+    clearStaleSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const validateInputs = (): boolean => {
@@ -120,11 +142,8 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
+     const { error } = await lovable.auth.signInWithOAuth('google', {
+       redirect_uri: window.location.origin,
       });
       
       if (error) {
