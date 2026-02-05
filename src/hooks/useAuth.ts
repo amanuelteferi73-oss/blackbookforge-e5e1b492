@@ -20,35 +20,32 @@ export function useAuth(): UseAuthResult {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
+      console.log('[useAuth] Auth state changed:', event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // If we got a valid session, we're done loading
+      if (session) {
+        setIsLoading(false);
+      }
     });
 
     // THEN initialize session (including OAuth code exchange if present)
     const init = async () => {
       try {
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-
-        // If we're coming back from an OAuth provider, exchange the code for a session
-        // BEFORE we decide the user is unauthenticated.
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            // Avoid logging sensitive details
-            console.warn('OAuth sign-in failed to complete.');
-          }
-
-          // Clean up the URL (remove code/state) so refreshes don't re-run the exchange
-          url.searchParams.delete('code');
-          url.searchParams.delete('state');
-          window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
-        }
-
         const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
+        console.log('[useAuth] Initial session check:', session?.user?.email ?? 'no session');
         setSession(session);
         setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('[useAuth] Error getting session:', error);
+        // On auth error (like invalid refresh token), sign out to clear stale state
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // Ignore signout errors
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
