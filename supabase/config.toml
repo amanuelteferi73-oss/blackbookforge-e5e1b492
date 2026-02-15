@@ -2,3 +2,12 @@ project_id = "hojbsflzgepbrnilohup"
 
 [functions.system-time]
 verify_jwt = false
+
+[functions.send-notifications]
+verify_jwt = false
+
+[functions.push-subscribe]
+verify_jwt = false
+
+[functions.floor-timer-check]
+verify_jwt = false
