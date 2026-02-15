@@ -2,6 +2,7 @@
 // Handles all notification-related logic
 
 import { DISCIPLINE_RULES } from './disciplineRules';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface NotificationState {
   isSupported: boolean;
@@ -69,35 +70,6 @@ export async function showDisciplineNotification(): Promise<void> {
   }
 }
 
-// Start the notification scheduling in the service worker
-export async function startNotificationScheduling(): Promise<void> {
-  const registration = await navigator.serviceWorker.ready;
-  
-  if (registration.active) {
-    registration.active.postMessage({
-      type: 'SCHEDULE_NOTIFICATIONS'
-    });
-    console.log('[Notifications] Scheduling started in service worker');
-  }
-  
-  // Try to register periodic sync (if supported)
-  try {
-    if ('periodicSync' in registration) {
-      // @ts-ignore - periodicSync is not in TS types yet
-      await registration.periodicSync.register('forge-hourly-discipline', {
-        minInterval: 60 * 60 * 1000 // 1 hour
-      });
-      // @ts-ignore
-      await registration.periodicSync.register('forge-checkin-check', {
-        minInterval: 5 * 60 * 1000 // 5 minutes
-      });
-      console.log('[Notifications] Periodic sync registered');
-    }
-  } catch (error) {
-    console.log('[Notifications] Periodic sync not available, using fallback');
-  }
-}
-
 // Register the service worker
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) {
@@ -111,8 +83,6 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     });
     
     console.log('[SW] Service worker registered:', registration.scope);
-    
-    // Wait for the service worker to be ready
     await navigator.serviceWorker.ready;
     console.log('[SW] Service worker is ready');
     
@@ -123,11 +93,153 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
+// Convert base64url string to Uint8Array for applicationServerKey
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+// Get VAPID public key from server
+export async function getVapidPublicKey(): Promise<string | null> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/send-notifications?action=vapid-public-key`,
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+    
+    if (!response.ok) {
+      console.error('[Push] Failed to get VAPID key, status:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    console.log('[Push] Got VAPID public key');
+    return data.publicKey || null;
+  } catch (error) {
+    console.error('[Push] Failed to get VAPID key:', error);
+    return null;
+  }
+}
+
+// Subscribe to web push notifications
+export async function subscribeToPush(registration: ServiceWorkerRegistration): Promise<PushSubscription | null> {
+  try {
+    // Check if already subscribed
+    const reg = registration as any;
+    const existingSub = await reg.pushManager.getSubscription();
+    if (existingSub) {
+      console.log('[Push] Already subscribed, syncing to server');
+      await syncSubscriptionToServer(existingSub);
+      return existingSub;
+    }
+
+    // Get VAPID public key
+    const vapidPublicKey = await getVapidPublicKey();
+    if (!vapidPublicKey) {
+      console.error('[Push] No VAPID public key available');
+      return null;
+    }
+
+    // Subscribe
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    console.log('[Push] Subscribed to push notifications');
+
+    // Store subscription on server
+    await syncSubscriptionToServer(subscription);
+
+    return subscription;
+  } catch (error) {
+    console.error('[Push] Subscription failed:', error);
+    return null;
+  }
+}
+
+// Sync push subscription to server
+async function syncSubscriptionToServer(subscription: PushSubscription): Promise<void> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('[Push] No session, cannot sync subscription');
+      return;
+    }
+
+    const subJson = subscription.toJSON();
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/push-subscribe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        action: 'subscribe',
+        subscription: {
+          endpoint: subJson.endpoint,
+          keys: subJson.keys,
+        },
+      }),
+    });
+
+    const result = await response.json();
+    console.log('[Push] Subscription synced to server:', result);
+  } catch (error) {
+    console.error('[Push] Failed to sync subscription:', error);
+  }
+}
+
+// Unsubscribe from web push
+export async function unsubscribeFromPush(): Promise<void> {
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return;
+
+    const subscription = await (registration as any).pushManager.getSubscription();
+    if (!subscription) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Remove from server
+    if (session) {
+      const subJson = subscription.toJSON();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/push-subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: 'unsubscribe',
+          subscription: { endpoint: subJson.endpoint },
+        }),
+      });
+      await response.json();
+    }
+
+    // Unsubscribe locally
+    await subscription.unsubscribe();
+    console.log('[Push] Unsubscribed from push notifications');
+  } catch (error) {
+    console.error('[Push] Failed to unsubscribe:', error);
+  }
+}
+
 // Get push subscription for the user
 export async function getPushSubscription(): Promise<PushSubscription | null> {
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const subscription = await (registration as any).pushManager.getSubscription();
     return subscription;
   } catch (error) {
     console.error('[Push] Error getting subscription:', error);

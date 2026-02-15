@@ -169,17 +169,39 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle push events (for future server-push capability)
+// Handle push events from server
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received');
+  console.log('[SW] Push received from server');
   
   if (event.data) {
-    const data = event.data.json();
-    
-    if (data.type === 'checkin') {
-      event.waitUntil(showCheckInReminder(data.hoursLeft || 1));
-    } else if (data.type === 'discipline') {
-      event.waitUntil(showDisciplineReminder());
+    try {
+      const data = event.data.json();
+      const title = data.title || 'FORGE';
+      const options = {
+        body: data.body || '',
+        icon: '/favicon.png',
+        badge: '/favicon.png',
+        tag: data.type === 'checkin' ? 'checkin-reminder' : 'discipline-reminder',
+        renotify: true,
+        requireInteraction: data.type === 'checkin',
+        vibrate: data.type === 'checkin' ? [200, 100, 200, 100, 200] : [100, 50, 100],
+        data: {
+          type: data.type,
+          url: data.url || '/'
+        }
+      };
+      
+      event.waitUntil(self.registration.showNotification(title, options));
+    } catch (e) {
+      console.error('[SW] Error handling push:', e);
+      // Fallback: show generic notification
+      event.waitUntil(
+        self.registration.showNotification('FORGE', {
+          body: 'You have a new reminder.',
+          icon: '/favicon.png',
+          badge: '/favicon.png',
+        })
+      );
     }
   }
 });
