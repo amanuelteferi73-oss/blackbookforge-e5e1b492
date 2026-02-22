@@ -9,7 +9,8 @@ const WEEK_TITLES: Record<number, string> = {
   4: 'PUBLIC EXISTENCE & FIRST REALITY CONTACT',
   5: 'MARKETING BLITZ & OUTREACH DOMINATION',
   6: 'DUAL-TRACK EXECUTION',
-  7: 'INVESTOR OUTREACH & FIRST REVENUE'
+  7: 'INVESTOR OUTREACH & FIRST REVENUE',
+  8: 'ALL-OUT STARTUP BLITZ'
 };
 
 // Week summaries (displayed at bottom)
@@ -19,7 +20,8 @@ const WEEK_SUMMARIES: Record<number, string> = {
   4: "You made something public without waiting for perfection.\nYou allowed reality to touch your work.\nYou returned to cash flow without abandoning the build.\nYou crossed the point of no return.\n\nThis is where builders separate permanently.",
   5: "You flooded the market with your presence.\nYou broke the fear of volume.\nYou learned that outreach is a numbers game.\nYou built a machine that works without you.\n\nThis week separates talkers from doers.",
   6: "You proved you can run two engines.\nNeither collapsed under the weight.\nYou balanced survival with ambition.\nYou maintained momentum across tracks.\n\nThis is where operators emerge.",
-  7: "You transformed action into outcomes.\nYou made your first real money.\nYou opened doors to investors.\nYou became a seller, not just a builder.\n\nThis is where revenue unlocks everything."
+  7: "You transformed action into outcomes.\nYou made your first real money.\nYou opened doors to investors.\nYou became a seller, not just a builder.\n\nThis is where revenue unlocks everything.",
+  8: "You stopped hiding behind building.\nYou put your startup in front of 30,000 people.\nYou found the people who will amplify your message.\nYou proved you can sell, not just create.\nYou maintained physical discipline through chaos.\n\nThis is where operators become unstoppable."
 };
 
 interface WeekOverviewProps {
