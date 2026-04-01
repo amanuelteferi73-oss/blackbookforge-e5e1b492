@@ -45,7 +45,7 @@ export interface FloorTimer {
 }
 
 // All week data for initialization
-const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA, WEEK_3_DATA, WEEK_4_DATA, WEEK_5_DATA, WEEK_6_DATA, WEEK_7_DATA, WEEK_8_DATA];
+const ALL_WEEKS = [WEEK_1_DATA, WEEK_2_DATA, WEEK_3_DATA, WEEK_4_DATA, WEEK_5_DATA, WEEK_6_DATA, WEEK_7_DATA, WEEK_8_DATA, WEEK_9_DATA, WEEK_10_DATA];
 
 export function useFloor() {
   const { user } = useAuth();
