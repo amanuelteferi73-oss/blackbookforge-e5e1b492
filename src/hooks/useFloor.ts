@@ -9,6 +9,8 @@ import { WEEK_5_DATA } from '@/lib/floorWeek5Data';
 import { WEEK_6_DATA } from '@/lib/floorWeek6Data';
 import { WEEK_7_DATA } from '@/lib/floorWeek7Data';
 import { WEEK_8_DATA } from '@/lib/floorWeek8Data';
+import { WEEK_9_DATA } from '@/lib/floorWeek9Data';
+import { WEEK_10_DATA } from '@/lib/floorWeek10Data';
 
 export interface FloorDay {
   id: string;
