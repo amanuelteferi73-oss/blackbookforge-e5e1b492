@@ -273,9 +273,11 @@ export function EnforcementCheckIn() {
           discipline_breach: result.disciplineBreach,
           submitted_at: new Date().toISOString(),
           is_missed: false,
-          focus_pillar: selectedPillars[0] || null, // Legacy: store first pillar
-          selected_pillars: selectedPillars, // New: store all pillars
-          daily_achievement: dailyAchievement.trim() || null, // Store daily achievement
+          focus_pillar: selectedPillars[0] || null,
+          selected_pillars: selectedPillars,
+          daily_achievement: dailyAchievement.trim() || null,
+          audio_path: mediaPaths.audio || null,
+          video_path: mediaPaths.video || null,
         })
         .select()
         .single();
