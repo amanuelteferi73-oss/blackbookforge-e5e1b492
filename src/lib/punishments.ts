@@ -70,8 +70,8 @@ export function selectRandomPunishment(): { index: number; text: string } {
   };
 }
 
-// Punishment threshold - triggers when score <= this value
-export const PUNISHMENT_THRESHOLD = 85;
+// Punishment threshold - triggers when score <= this value (RAISED: more painful)
+export const PUNISHMENT_THRESHOLD = 90;
 
 // Reward threshold - triggers when score >= this value
-export const REWARD_THRESHOLD = 86;
+export const REWARD_THRESHOLD = 91;

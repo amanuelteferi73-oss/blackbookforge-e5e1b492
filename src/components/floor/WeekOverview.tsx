@@ -10,7 +10,9 @@ const WEEK_TITLES: Record<number, string> = {
   5: 'MARKETING BLITZ & OUTREACH DOMINATION',
   6: 'DUAL-TRACK EXECUTION',
   7: 'INVESTOR OUTREACH & FIRST REVENUE',
-  8: 'ALL-OUT STARTUP BLITZ'
+  8: 'ALL-OUT STARTUP BLITZ',
+  9: 'UNBREAKABLE MINDSET RECONSTRUCTION',
+  10: 'THE PERFECT BUSINESS HUNT',
 };
 
 // Week summaries (displayed at bottom)
@@ -21,7 +23,9 @@ const WEEK_SUMMARIES: Record<number, string> = {
   5: "You flooded the market with your presence.\nYou broke the fear of volume.\nYou learned that outreach is a numbers game.\nYou built a machine that works without you.\n\nThis week separates talkers from doers.",
   6: "You proved you can run two engines.\nNeither collapsed under the weight.\nYou balanced survival with ambition.\nYou maintained momentum across tracks.\n\nThis is where operators emerge.",
   7: "You transformed action into outcomes.\nYou made your first real money.\nYou opened doors to investors.\nYou became a seller, not just a builder.\n\nThis is where revenue unlocks everything.",
-  8: "You stopped hiding behind building.\nYou put your startup in front of 30,000 people.\nYou found the people who will amplify your message.\nYou proved you can sell, not just create.\nYou maintained physical discipline through chaos.\n\nThis is where operators become unstoppable."
+  8: "You stopped hiding behind building.\nYou put your startup in front of 30,000 people.\nYou found the people who will amplify your message.\nYou proved you can sell, not just create.\nYou maintained physical discipline through chaos.\n\nThis is where operators become unstoppable.",
+  9: "You faced the mirror and didn't flinch.\nYou rebuilt your mind from the ground up.\nYou consumed the mindset of billion-dollar builders.\nYou proved that 3 weeks off doesn't mean 3 years lost.\nYou trained your body every single day.\n\nThe builder is back. Unbreakable.",
+  10: "You didn't chase shiny objects.\nYou researched, validated, and decided.\nYou committed to ONE path with zero regret.\nYou built the roadmap before touching code.\n\nThe mission is clear. The hunt is over. Now you build."
 };
 
 interface WeekOverviewProps {

@@ -25,6 +25,7 @@ import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket,
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { CheckInMediaRecorder } from './CheckInMediaRecorder';
 
 const PILLAR_ICONS = {
   startup: Rocket,
@@ -46,6 +47,7 @@ export function EnforcementCheckIn() {
   const [showPunishmentFlow, setShowPunishmentFlow] = useState(false);
   const [unlockReward, setUnlockReward] = useState<string | null>(null);
   const [dailyAchievement, setDailyAchievement] = useState<string>('');
+  const [mediaPaths, setMediaPaths] = useState<{ audio?: string; video?: string }>({});
   const [punishmentData, setPunishmentData] = useState<{
     checkInId: string;
     score: number;
@@ -271,9 +273,11 @@ export function EnforcementCheckIn() {
           discipline_breach: result.disciplineBreach,
           submitted_at: new Date().toISOString(),
           is_missed: false,
-          focus_pillar: selectedPillars[0] || null, // Legacy: store first pillar
-          selected_pillars: selectedPillars, // New: store all pillars
-          daily_achievement: dailyAchievement.trim() || null, // Store daily achievement
+          focus_pillar: selectedPillars[0] || null,
+          selected_pillars: selectedPillars,
+          daily_achievement: dailyAchievement.trim() || null,
+          audio_path: mediaPaths.audio || null,
+          video_path: mediaPaths.video || null,
         })
         .select()
         .single();
@@ -485,6 +489,17 @@ export function EnforcementCheckIn() {
           </div>
         )}
 
+        {/* Media recordings (read-only view) */}
+        {userId && (existingCheckIn.audio_path || existingCheckIn.video_path) && (
+          <CheckInMediaRecorder
+            userId={userId}
+            checkInId={existingCheckIn.id}
+            date={existingCheckIn.date}
+            existingAudioPath={existingCheckIn.audio_path}
+            existingVideoPath={existingCheckIn.video_path}
+          />
+        )}
+
         <Button 
           variant="outline" 
           className="w-full"
@@ -639,6 +654,16 @@ export function EnforcementCheckIn() {
           className="min-h-[100px] resize-none bg-background"
         />
       </div>
+
+      {/* Audio & Video Recording */}
+      {userId && (
+        <CheckInMediaRecorder
+          userId={userId}
+          checkInId={existingCheckIn?.id || null}
+          date={getTodayKey()}
+          onMediaSaved={(type, path) => setMediaPaths(prev => ({ ...prev, [type]: path }))}
+        />
+      )}
 
       {/* Preview Score */}
       <div className="p-4 bg-muted/50 rounded-lg border space-y-3">

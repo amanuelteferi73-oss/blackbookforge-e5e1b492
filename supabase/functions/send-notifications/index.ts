@@ -5,6 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// ALL 60 DISCIPLINE RULES — business-focused, relentless reminders
 const DISCIPLINE_RULES = [
   { id: 1, title: "Pick the hardest build, learn and do" },
   { id: 2, title: "Feel the pain all the way - this is what can make you who you wanna be" },
@@ -43,6 +44,29 @@ const DISCIPLINE_RULES = [
   { id: 35, title: "Build the system then you will see how it matter" },
   { id: 36, title: "Next stop will be on billions not even millions" },
   { id: 37, title: "Luck is when preparation meets opportunity so don't wait for it - show me who you are" },
+  { id: 38, title: "3 weeks off means 3x harder now - you owe yourself those days back" },
+  { id: 39, title: "Every hour you're not building, someone else is taking YOUR customers" },
+  { id: 40, title: "Revenue is the only validation that matters - users paying = you winning" },
+  { id: 41, title: "Stop thinking and start shipping - imperfect action beats perfect planning" },
+  { id: 42, title: "Your startup dies when YOU stop - it has no other heartbeat" },
+  { id: 43, title: "The market doesn't care about your feelings - it rewards execution" },
+  { id: 44, title: "You are 1 sale away from proving everything - go get that 1 sale" },
+  { id: 45, title: "Outreach is oxygen - 0 emails sent = 0 customers = death" },
+  { id: 46, title: "Every 'no' is data, every silence is a chance to follow up harder" },
+  { id: 47, title: "If Masayoshi Son could lose $70 billion and come back, you can survive this" },
+  { id: 48, title: "Your product solves a real problem - remind yourself WHY you built it" },
+  { id: 49, title: "Entrepreneurship is not a mood - it's a system you run daily regardless" },
+  { id: 50, title: "You vanished for 3 weeks and the world kept spinning - now spin faster than it" },
+  { id: 51, title: "A billion-dollar company starts with a $1 sale - go make that dollar" },
+  { id: 52, title: "Comfort is the enemy - the moment you feel comfortable you're falling behind" },
+  { id: 53, title: "Your competitors shipped 3 features while you were 'figuring things out'" },
+  { id: 54, title: "The gym builds the body that carries a billion-dollar mind - never skip it" },
+  { id: 55, title: "You promised yourself THIS would be different - prove it with action not words" },
+  { id: 56, title: "Send 100 cold emails today or admit you don't want it bad enough" },
+  { id: 57, title: "The comeback is always stronger than the setback - but ONLY if you start NOW" },
+  { id: 58, title: "Nobody is coming to save your startup - you are the cavalry" },
+  { id: 59, title: "Your 365-day clock is ticking - day wasted = opportunity murdered" },
+  { id: 60, title: "Build like you're running out of time because YOU ARE" },
 ];
 
 function getRandomRule() {
@@ -102,11 +126,9 @@ async function createVapidJwt(audience: string, privateKeyB64: string, publicKey
   const payloadB64 = base64urlEncode(encoder.encode(JSON.stringify(payload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import private key
   const privateKeyBytes = base64urlDecode(privateKeyB64);
   const publicKeyBytes = base64urlDecode(publicKeyB64);
 
-  // Build JWK for import
   const jwk = {
     kty: 'EC',
     crv: 'P-256',
@@ -129,17 +151,8 @@ async function createVapidJwt(audience: string, privateKeyB64: string, publicKey
     encoder.encode(unsignedToken)
   );
 
-  // Convert DER signature to raw r||s format if needed
   const sigBytes = new Uint8Array(signature);
-  let rawSig: Uint8Array;
-  if (sigBytes.length === 64) {
-    rawSig = sigBytes;
-  } else {
-    // Already raw from Web Crypto
-    rawSig = sigBytes;
-  }
-
-  return `${unsignedToken}.${base64urlEncode(rawSig)}`;
+  return `${unsignedToken}.${base64urlEncode(sigBytes)}`;
 }
 
 // Encrypt push payload using RFC 8291
@@ -151,7 +164,6 @@ async function encryptPayload(
   const encoder = new TextEncoder();
   const payloadBytes = encoder.encode(payload);
 
-  // Generate local ECDH key pair
   const localKeyPair = await crypto.subtle.generateKey(
     { name: 'ECDH', namedCurve: 'P-256' },
     true,
@@ -159,7 +171,6 @@ async function encryptPayload(
   );
   const localPublicKeyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', localKeyPair.publicKey));
 
-  // Import subscriber's public key
   const subscriberKey = await crypto.subtle.importKey(
     'raw',
     base64urlDecode(p256dhKey),
@@ -168,7 +179,6 @@ async function encryptPayload(
     []
   );
 
-  // ECDH shared secret
   const sharedSecret = new Uint8Array(
     await crypto.subtle.deriveBits(
       { name: 'ECDH', public: subscriberKey },
@@ -180,7 +190,6 @@ async function encryptPayload(
   const authSecretBytes = base64urlDecode(authSecret);
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // HKDF for IKM: info = "WebPush: info\0" + subscriber_key + local_key
   const subscriberKeyBytes = base64urlDecode(p256dhKey);
   const infoIkm = new Uint8Array([
     ...encoder.encode('WebPush: info\0'),
@@ -197,7 +206,6 @@ async function encryptPayload(
     )
   );
 
-  // Derive content encryption key (CEK)
   const cekInfo = encoder.encode('Content-Encoding: aes128gcm\0');
   const cekBaseKey = await crypto.subtle.importKey('raw', ikm, { name: 'HKDF' }, false, ['deriveBits']);
   const cekBits = new Uint8Array(
@@ -208,7 +216,6 @@ async function encryptPayload(
     )
   );
 
-  // Derive nonce
   const nonceInfo = encoder.encode('Content-Encoding: nonce\0');
   const nonceBaseKey = await crypto.subtle.importKey('raw', ikm, { name: 'HKDF' }, false, ['deriveBits']);
   const nonce = new Uint8Array(
@@ -219,8 +226,6 @@ async function encryptPayload(
     )
   );
 
-  // Encrypt with AES-128-GCM
-  // Add padding: delimiter byte (2) + no padding
   const paddedPayload = new Uint8Array([...payloadBytes, 2]);
 
   const cekKey = await crypto.subtle.importKey('raw', cekBits, { name: 'AES-GCM' }, false, ['encrypt']);
@@ -228,9 +233,8 @@ async function encryptPayload(
     await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, cekKey, paddedPayload)
   );
 
-  // Build aes128gcm content coding header
   const recordSize = new Uint8Array(4);
-  new DataView(recordSize.buffer).setUint32(0, paddedPayload.length + 16); // ciphertext + tag
+  new DataView(recordSize.buffer).setUint32(0, paddedPayload.length + 16);
   const header = new Uint8Array([
     ...salt,
     ...recordSize,
@@ -256,7 +260,6 @@ async function sendPushNotification(
     const payloadStr = JSON.stringify(payload);
     const { ciphertext } = await encryptPayload(payloadStr, p256dh, auth);
 
-    // Create VAPID authorization
     const endpointUrl = new URL(endpoint);
     const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
     const jwt = await createVapidJwt(audience, vapidPrivateKey, vapidPublicKey);
@@ -335,6 +338,8 @@ Deno.serve(async (req) => {
 
     // POST: Send notifications to all subscribers (called by pg_cron)
     if (req.method === 'POST') {
+      console.log('[SEND-NOTIFICATIONS] Cron triggered at', new Date().toISOString());
+
       // Get VAPID keys from DB
       const { data: configs } = await supabase
         .from('notification_config')
@@ -342,7 +347,8 @@ Deno.serve(async (req) => {
         .in('key', ['vapid_public_key', 'vapid_private_key']);
 
       if (!configs || configs.length < 2) {
-        return json({ error: 'VAPID keys not configured. Call GET ?action=vapid-public-key first.' }, 500);
+        console.error('[SEND-NOTIFICATIONS] VAPID keys not found');
+        return json({ error: 'VAPID keys not configured' }, 500);
       }
 
       const vapidPublicKey = configs.find(c => c.key === 'vapid_public_key')!.value;
@@ -360,14 +366,14 @@ Deno.serve(async (req) => {
 
       if (!subs || subs.length === 0) {
         console.log('[SEND-NOTIFICATIONS] No subscriptions found');
-        return json({ message: 'No subscriptions to notify', sent: 0 });
+        return json({ message: 'No subscriptions', sent: 0 });
       }
 
       const hoursLeft = getHoursUntilMidnightUTC();
       const results: Array<{ userId: string; type: string; status: string; error?: string }> = [];
 
       for (const sub of subs) {
-        // Send discipline reminder (every call = every hour via cron)
+        // ALWAYS send discipline reminder (every hour)
         const rule = getRandomRule();
         const disciplineResult = await sendPushNotification(
           sub.endpoint,
@@ -376,7 +382,7 @@ Deno.serve(async (req) => {
           {
             type: 'discipline',
             title: `🔥 RULE #${rule.id}`,
-            body: `${rule.title}\n\nRemember who you are becoming.`,
+            body: `${rule.title}\n\nRemember who you are becoming. Get back to work.`,
             url: '/',
           },
           vapidPublicKey,
@@ -406,10 +412,10 @@ Deno.serve(async (req) => {
             sub.auth,
             {
               type: 'checkin',
-              title: isUrgent ? '🔴 URGENT: CHECK-IN DEADLINE' : '⏰ CHECK-IN REMINDER',
+              title: isUrgent ? '🔴 LAST CHANCE: CHECK-IN NOW' : '⏰ CHECK-IN DEADLINE APPROACHING',
               body: isUrgent
-                ? `Only ${Math.round(hoursLeft)} HOUR remaining! Complete your check-in NOW!`
-                : `${Math.round(hoursLeft)} HOURS remaining. Check in before midnight.`,
+                ? `LESS THAN 1 HOUR LEFT! Check in NOW or it's an automatic failure + punishment!`
+                : `${Math.round(hoursLeft)} hours left. Don't let this day slip. Check in before midnight UTC.`,
               url: '/check-in',
             },
             vapidPublicKey,
@@ -425,11 +431,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log(`[SEND-NOTIFICATIONS] Processed ${subs.length} subscriptions, hours until midnight: ${hoursLeft.toFixed(1)}`);
+      const sentCount = results.filter(r => r.status === 'sent').length;
+      console.log(`[SEND-NOTIFICATIONS] Done: ${sentCount}/${results.length} sent, ${hoursLeft.toFixed(1)}h until midnight`);
+      
       return json({
-        sent: results.filter(r => r.status === 'sent').length,
+        sent: sentCount,
         total: results.length,
         hoursUntilMidnight: Math.round(hoursLeft * 10) / 10,
+        timestamp: new Date().toISOString(),
         results,
       });
     }
