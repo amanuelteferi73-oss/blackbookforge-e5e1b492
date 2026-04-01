@@ -121,6 +121,7 @@ export type Database = {
       }
       daily_checkins: {
         Row: {
+          audio_path: string | null
           created_at: string
           daily_achievement: string | null
           date: string
@@ -133,8 +134,10 @@ export type Database = {
           submitted_at: string | null
           total_score: number
           user_id: string
+          video_path: string | null
         }
         Insert: {
+          audio_path?: string | null
           created_at?: string
           daily_achievement?: string | null
           date: string
@@ -147,8 +150,10 @@ export type Database = {
           submitted_at?: string | null
           total_score?: number
           user_id: string
+          video_path?: string | null
         }
         Update: {
+          audio_path?: string | null
           created_at?: string
           daily_achievement?: string | null
           date?: string
@@ -161,6 +166,7 @@ export type Database = {
           submitted_at?: string | null
           total_score?: number
           user_id?: string
+          video_path?: string | null
         }
         Relationships: [
           {
