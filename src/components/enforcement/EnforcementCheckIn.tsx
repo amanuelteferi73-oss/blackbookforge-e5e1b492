@@ -489,6 +489,17 @@ export function EnforcementCheckIn() {
           </div>
         )}
 
+        {/* Media recordings (read-only view) */}
+        {userId && (existingCheckIn.audio_path || existingCheckIn.video_path) && (
+          <CheckInMediaRecorder
+            userId={userId}
+            checkInId={existingCheckIn.id}
+            date={existingCheckIn.date}
+            existingAudioPath={existingCheckIn.audio_path}
+            existingVideoPath={existingCheckIn.video_path}
+          />
+        )}
+
         <Button 
           variant="outline" 
           className="w-full"
