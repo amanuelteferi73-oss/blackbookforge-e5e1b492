@@ -47,6 +47,7 @@ export function EnforcementCheckIn() {
   const [showPunishmentFlow, setShowPunishmentFlow] = useState(false);
   const [unlockReward, setUnlockReward] = useState<string | null>(null);
   const [dailyAchievement, setDailyAchievement] = useState<string>('');
+  const [mediaPaths, setMediaPaths] = useState<{ audio?: string; video?: string }>({});
   const [punishmentData, setPunishmentData] = useState<{
     checkInId: string;
     score: number;
