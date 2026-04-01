@@ -642,6 +642,16 @@ export function EnforcementCheckIn() {
         />
       </div>
 
+      {/* Audio & Video Recording */}
+      {userId && (
+        <CheckInMediaRecorder
+          userId={userId}
+          checkInId={existingCheckIn?.id || null}
+          date={getTodayKey()}
+          onMediaSaved={(type, path) => setMediaPaths(prev => ({ ...prev, [type]: path }))}
+        />
+      )}
+
       {/* Preview Score */}
       <div className="p-4 bg-muted/50 rounded-lg border space-y-3">
         <div className="flex items-center justify-between">
