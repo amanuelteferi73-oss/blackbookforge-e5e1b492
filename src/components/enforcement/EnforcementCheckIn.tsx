@@ -21,7 +21,7 @@ import { FloorPillarSection } from './FloorPillarSection';
 import { PunishmentFlow } from '@/components/punishment/PunishmentFlow';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers, Gift, Trophy } from 'lucide-react';
+import { Loader2, Lock, CheckCircle2, AlertTriangle, XCircle, Briefcase, Rocket, GraduationCap, Layers, Gift, Trophy, Video, Mic } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
