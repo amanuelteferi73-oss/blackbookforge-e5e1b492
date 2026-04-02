@@ -1,5 +1,11 @@
-// FORGE Service Worker - Handles background notifications
-const CACHE_NAME = 'forge-v1';
+// FORGE Service Worker - Handles background notifications + offline caching
+const CACHE_NAME = 'forge-v2';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/favicon.png',
+  '/manifest.webmanifest',
+];
 
 // Discipline rules for hourly reminders
 const DISCIPLINE_RULES = [
@@ -65,13 +71,10 @@ const DISCIPLINE_RULES = [
   { id: 60, title: "Build like you're running out of time because YOU ARE" },
 ];
 
-// Get random discipline rule
 function getRandomRule() {
-  const index = Math.floor(Math.random() * DISCIPLINE_RULES.length);
-  return DISCIPLINE_RULES[index];
+  return DISCIPLINE_RULES[Math.floor(Math.random() * DISCIPLINE_RULES.length)];
 }
 
-// Calculate time until next hour
 function getMillisUntilNextHour() {
   const now = new Date();
   const nextHour = new Date(now);
@@ -79,7 +82,6 @@ function getMillisUntilNextHour() {
   return nextHour.getTime() - now.getTime();
 }
 
-// Calculate hours until midnight UTC
 function getHoursUntilMidnightUTC() {
   const now = new Date();
   const midnight = new Date(now);
@@ -87,45 +89,29 @@ function getHoursUntilMidnightUTC() {
   return (midnight.getTime() - now.getTime()) / (1000 * 60 * 60);
 }
 
-// Show check-in deadline notification (only if permission granted)
 async function showCheckInReminder(hoursLeft) {
-  // Check permission first
-  if (!self.registration || Notification.permission !== 'granted') {
-    console.log('[SW] Cannot show notification - permission not granted');
-    return;
-  }
-  
+  if (!self.registration || Notification.permission !== 'granted') return;
   const isUrgent = hoursLeft <= 1;
-  const title = isUrgent ? '🔴 URGENT: CHECK-IN DEADLINE' : '⏰ CHECK-IN REMINDER';
-  const body = isUrgent 
-    ? `Only ${hoursLeft} HOUR remaining! Complete your check-in NOW or face automatic failure.`
-    : `You have ${hoursLeft} HOURS remaining. Complete your check-in before midnight.`;
-  
-  return self.registration.showNotification(title, {
-    body,
-    icon: '/favicon.png',
-    badge: '/favicon.png',
-    tag: 'checkin-reminder',
-    renotify: true,
-    requireInteraction: isUrgent,
-    vibrate: isUrgent ? [200, 100, 200, 100, 200] : [200, 100, 200],
-    data: {
-      type: 'checkin',
-      url: '/check-in'
+  return self.registration.showNotification(
+    isUrgent ? '🔴 URGENT: CHECK-IN DEADLINE' : '⏰ CHECK-IN REMINDER',
+    {
+      body: isUrgent 
+        ? `Only ${hoursLeft} HOUR remaining! Complete your check-in NOW or face automatic failure.`
+        : `You have ${hoursLeft} HOURS remaining. Complete your check-in before midnight.`,
+      icon: '/favicon.png',
+      badge: '/favicon.png',
+      tag: 'checkin-reminder',
+      renotify: true,
+      requireInteraction: isUrgent,
+      vibrate: isUrgent ? [200, 100, 200, 100, 200] : [200, 100, 200],
+      data: { type: 'checkin', url: '/check-in' }
     }
-  });
+  );
 }
 
-// Show discipline rule notification (only if permission granted)
 async function showDisciplineReminder() {
-  // Check permission first
-  if (!self.registration || Notification.permission !== 'granted') {
-    console.log('[SW] Cannot show notification - permission not granted');
-    return;
-  }
-  
+  if (!self.registration || Notification.permission !== 'granted') return;
   const rule = getRandomRule();
-  
   return self.registration.showNotification(`🔥 RULE #${rule.id}`, {
     body: `${rule.title}\n\nRemember who you are becoming.`,
     icon: '/favicon.png',
@@ -134,73 +120,103 @@ async function showDisciplineReminder() {
     renotify: true,
     silent: false,
     vibrate: [100, 50, 100],
-    data: {
-      type: 'discipline',
-      ruleId: rule.id,
-      url: '/'
-    }
+    data: { type: 'discipline', ruleId: rule.id, url: '/' }
   });
 }
 
-// Check and schedule notifications
 async function checkAndNotify() {
   const hoursLeft = getHoursUntilMidnightUTC();
-  
-  // Check-in reminders at 3h, 2h, 1h before midnight
-  if (hoursLeft <= 3 && hoursLeft > 2.9) {
-    await showCheckInReminder(3);
-  } else if (hoursLeft <= 2 && hoursLeft > 1.9) {
-    await showCheckInReminder(2);
-  } else if (hoursLeft <= 1 && hoursLeft > 0.9) {
-    await showCheckInReminder(1);
-  }
+  if (hoursLeft <= 3 && hoursLeft > 2.9) await showCheckInReminder(3);
+  else if (hoursLeft <= 2 && hoursLeft > 1.9) await showCheckInReminder(2);
+  else if (hoursLeft <= 1 && hoursLeft > 0.9) await showCheckInReminder(1);
 }
 
-// Service Worker Install
+// === INSTALL: Cache static assets ===
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing FORGE Service Worker');
+  console.log('[SW] Installing FORGE Service Worker v2');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(STATIC_ASSETS).catch(err => {
+        console.warn('[SW] Some assets failed to cache:', err);
+      });
+    })
+  );
   self.skipWaiting();
 });
 
-// Service Worker Activate
+// === ACTIVATE: Clean old caches ===
 self.addEventListener('activate', (event) => {
-  console.log('[SW] FORGE Service Worker activated');
-  event.waitUntil(clients.claim());
+  console.log('[SW] FORGE Service Worker v2 activated');
+  event.waitUntil(
+    caches.keys().then(keys => 
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
+});
+
+// === FETCH: Network-first with cache fallback for navigation, cache-first for assets ===
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Skip non-GET and cross-origin
+  if (event.request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
+  // Skip auth routes
+  if (url.pathname.startsWith('/~oauth')) return;
+
+  // For navigation requests: network-first, fallback to cached index.html
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // For JS/CSS/images: stale-while-revalidate
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ico)$/)) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        const fetchPromise = fetch(event.request).then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
 });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
   event.notification.close();
-  
   const urlToOpen = event.notification.data?.url || '/';
-  
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Try to focus existing window
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(urlToOpen);
           return client.focus();
         }
       }
-      // Open new window if none exists
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      if (clients.openWindow) return clients.openWindow(urlToOpen);
     })
   );
 });
 
 // Handle push events from server
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received from server');
-  
   if (event.data) {
     try {
       const data = event.data.json();
-      const title = data.title || 'FORGE';
-      const options = {
+      event.waitUntil(self.registration.showNotification(data.title || 'FORGE', {
         body: data.body || '',
         icon: '/favicon.png',
         badge: '/favicon.png',
@@ -208,79 +224,45 @@ self.addEventListener('push', (event) => {
         renotify: true,
         requireInteraction: data.type === 'checkin',
         vibrate: data.type === 'checkin' ? [200, 100, 200, 100, 200] : [100, 50, 100],
-        data: {
-          type: data.type,
-          url: data.url || '/'
-        }
-      };
-      
-      event.waitUntil(self.registration.showNotification(title, options));
+        data: { type: data.type, url: data.url || '/' }
+      }));
     } catch (e) {
-      console.error('[SW] Error handling push:', e);
-      // Fallback: show generic notification
-      event.waitUntil(
-        self.registration.showNotification('FORGE', {
-          body: 'You have a new reminder.',
-          icon: '/favicon.png',
-          badge: '/favicon.png',
-        })
-      );
+      event.waitUntil(self.registration.showNotification('FORGE', {
+        body: 'You have a new reminder.', icon: '/favicon.png', badge: '/favicon.png'
+      }));
     }
   }
 });
 
-// Handle periodic sync for background notifications
+// Periodic sync
 self.addEventListener('periodicsync', (event) => {
-  console.log('[SW] Periodic sync:', event.tag);
-  
-  if (event.tag === 'forge-hourly-discipline') {
-    event.waitUntil(showDisciplineReminder());
-  } else if (event.tag === 'forge-checkin-check') {
-    event.waitUntil(checkAndNotify());
-  }
+  if (event.tag === 'forge-hourly-discipline') event.waitUntil(showDisciplineReminder());
+  else if (event.tag === 'forge-checkin-check') event.waitUntil(checkAndNotify());
 });
 
-// Handle messages from the main app
+// Messages from main app
 self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
-  
-  if (event.data.type === 'TEST_CHECKIN') {
-    event.waitUntil(showCheckInReminder(event.data.hours || 2));
-  } else if (event.data.type === 'TEST_DISCIPLINE') {
-    event.waitUntil(showDisciplineReminder());
-  } else if (event.data.type === 'SCHEDULE_NOTIFICATIONS') {
-    // Start the notification scheduling
-    scheduleNotifications();
-  }
+  if (event.data.type === 'TEST_CHECKIN') event.waitUntil(showCheckInReminder(event.data.hours || 2));
+  else if (event.data.type === 'TEST_DISCIPLINE') event.waitUntil(showDisciplineReminder());
+  else if (event.data.type === 'SCHEDULE_NOTIFICATIONS') scheduleNotifications();
 });
 
-// Schedule notifications using setTimeout (fallback for devices without periodic sync)
+// Fallback scheduling
 let hourlyInterval = null;
 let checkInInterval = null;
 
 function scheduleNotifications() {
-  // Clear existing intervals
   if (hourlyInterval) clearInterval(hourlyInterval);
   if (checkInInterval) clearInterval(checkInInterval);
   
-  // Schedule hourly discipline reminders
   const msUntilNextHour = getMillisUntilNextHour();
-  
   setTimeout(() => {
     showDisciplineReminder();
-    // Then every hour after that
-    hourlyInterval = setInterval(() => {
-      showDisciplineReminder();
-    }, 60 * 60 * 1000);
+    hourlyInterval = setInterval(() => showDisciplineReminder(), 60 * 60 * 1000);
   }, msUntilNextHour);
   
-  // Check for check-in reminders every 5 minutes
-  checkInInterval = setInterval(() => {
-    checkAndNotify();
-  }, 5 * 60 * 1000);
-  
-  // Also check immediately
+  checkInInterval = setInterval(() => checkAndNotify(), 5 * 60 * 1000);
   checkAndNotify();
   
-  console.log('[SW] Notifications scheduled. Next hourly reminder in', Math.round(msUntilNextHour / 60000), 'minutes');
+  console.log('[SW] Notifications scheduled. Next hourly in', Math.round(msUntilNextHour / 60000), 'min');
 }
