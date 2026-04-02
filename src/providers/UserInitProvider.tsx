@@ -1,6 +1,7 @@
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { seedDefaultRules, userHasRules } from '@/lib/defaultRules';
+import { useOfflineCache } from '@/hooks/useOfflineCache';
 
 interface UserInitContextType {
   isInitialized: boolean;
