@@ -1,6 +1,7 @@
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { seedDefaultRules, userHasRules } from '@/lib/defaultRules';
+import { useOfflineCache } from '@/hooks/useOfflineCache';
 
 interface UserInitContextType {
   isInitialized: boolean;
@@ -87,6 +88,9 @@ export function UserInitProvider({ children }: Props) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Offline cache sync
+  useOfflineCache(userId);
 
   return (
     <UserInitContext.Provider value={{ isInitialized, isInitializing, userId }}>
