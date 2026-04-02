@@ -51,6 +51,7 @@ const App = () => (
                         <Route path="/reality" element={<RealityPage />} />
                         <Route path="/progress" element={<ProgressPage />} />
                         <Route path="/floor" element={<FloorPage />} />
+                        <Route path="/record/today" element={<RecordPage />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </main>
