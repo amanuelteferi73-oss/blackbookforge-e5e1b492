@@ -15,6 +15,7 @@ import VaultPage from "./pages/VaultPage";
 import RealityPage from "./pages/RealityPage";
 import ProgressPage from "./pages/ProgressPage";
 import FloorPage from "./pages/FloorPage";
+import RecordPage from "./pages/RecordPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
