@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => ({
         injectionPoint: undefined
       },
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ].filter(Boolean),

@@ -89,6 +89,9 @@ export function UserInitProvider({ children }: Props) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Offline cache sync
+  useOfflineCache(userId);
+
   return (
     <UserInitContext.Provider value={{ isInitialized, isInitializing, userId }}>
       {children}
