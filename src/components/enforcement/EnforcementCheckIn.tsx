@@ -500,6 +500,31 @@ export function EnforcementCheckIn() {
           />
         )}
 
+        {/* Record Reflection Button */}
+        <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Video className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Today's Reflection</h3>
+          </div>
+          {existingCheckIn.video_path || existingCheckIn.audio_path ? (
+            <Button variant="outline" className="w-full" onClick={() => navigate('/record/today')}>
+              ✅ View / Re-record Today's Reflection
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => navigate('/record/today')}>
+                <Video className="h-4 w-4 mr-2" /> Record Video
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => navigate('/record/today')}>
+                <Mic className="h-4 w-4 mr-2" /> Record Audio
+              </Button>
+            </div>
+          )}
+          {!existingCheckIn.video_path && !existingCheckIn.audio_path && (
+            <p className="text-xs text-muted-foreground">📹 You haven't recorded today's reflection yet. Capture your thoughts!</p>
+          )}
+        </div>
+
         <Button 
           variant="outline" 
           className="w-full"
