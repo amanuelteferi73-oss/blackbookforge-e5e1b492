@@ -510,3 +510,21 @@ export async function getDailyAchievementForDate(
   if (error || !data) return null;
   return data.daily_achievement;
 }
+
+/**
+ * Get media paths for a specific date
+ */
+export async function getMediaForDate(
+  userId: string,
+  date: string
+): Promise<{ video_path: string | null; audio_path: string | null } | null> {
+  const { data, error } = await supabase
+    .from('daily_checkins')
+    .select('video_path, audio_path')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return { video_path: data.video_path, audio_path: data.audio_path };
+}

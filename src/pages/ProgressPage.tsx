@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { useScoreHistory, useScoringEngine } from '@/hooks/useScoringEngine';
-import { getFailedItemsForDate, getPunishmentForDate, getDailyAchievementForDate } from '@/lib/scoringEngine';
+import { getFailedItemsForDate, getPunishmentForDate, getDailyAchievementForDate, getMediaForDate } from '@/lib/scoringEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2, Trophy } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2, Trophy, Video, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FailedItem {
