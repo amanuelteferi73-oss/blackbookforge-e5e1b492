@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { useScoreHistory, useScoringEngine } from '@/hooks/useScoringEngine';
-import { getFailedItemsForDate, getPunishmentForDate, getDailyAchievementForDate } from '@/lib/scoringEngine';
+import { getFailedItemsForDate, getPunishmentForDate, getDailyAchievementForDate, getMediaForDate } from '@/lib/scoringEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2, Trophy } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Flame, Target, Calendar, Loader2, ChevronDown, ChevronRight, XCircle, Gavel, CheckCircle2, Trophy, Video, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FailedItem {
@@ -19,6 +19,46 @@ interface PunishmentInfo {
   proof_feeling: string | null;
 }
 
+// Helper components for media playback from storage
+function VideoPlayer({ filePath }: { filePath: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  if (!url && !error) {
+    supabase.storage.from('checkin-media').createSignedUrl(filePath, 3600)
+      .then(({ data, error: err }) => {
+        if (err || !data) setError(true);
+        else setUrl(data.signedUrl);
+      });
+  }
+
+  if (error) return <p className="text-xs text-muted-foreground">Video unavailable</p>;
+  if (!url) return <p className="text-xs text-muted-foreground">Loading video...</p>;
+  return <video src={url} controls playsInline className="w-full rounded-md max-h-48 bg-black" />;
+}
+
+function AudioPlayer({ filePath }: { filePath: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  if (!url && !error) {
+    supabase.storage.from('checkin-media').createSignedUrl(filePath, 3600)
+      .then(({ data, error: err }) => {
+        if (err || !data) setError(true);
+        else setUrl(data.signedUrl);
+      });
+  }
+
+  if (error) return <p className="text-xs text-muted-foreground">Audio unavailable</p>;
+  if (!url) return <p className="text-xs text-muted-foreground">Loading audio...</p>;
+  return (
+    <div className="flex items-center gap-2">
+      <Mic className="w-3 h-3 text-primary" />
+      <audio src={url} controls className="w-full h-8" />
+    </div>
+  );
+}
+
 export default function ProgressPage() {
   const time = useTimeEngine(60000);
   const { currentStreak, totalCheckIns, isLoading: statsLoading } = useScoringEngine();
@@ -27,6 +67,7 @@ export default function ProgressPage() {
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
   const [punishment, setPunishment] = useState<PunishmentInfo | null>(null);
   const [dailyAchievement, setDailyAchievement] = useState<string | null>(null);
+  const [mediaPaths, setMediaPaths] = useState<{ video_path: string | null; audio_path: string | null } | null>(null);
   const [loadingItems, setLoadingItems] = useState(false);
 
   const isLoading = statsLoading || historyLoading;
@@ -52,6 +93,7 @@ export default function ProgressPage() {
       setFailedItems([]);
       setPunishment(null);
       setDailyAchievement(null);
+      setMediaPaths(null);
       return;
     }
 
@@ -61,14 +103,16 @@ export default function ProgressPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const [items, punishmentData, achievement] = await Promise.all([
+        const [items, punishmentData, achievement, media] = await Promise.all([
           getFailedItemsForDate(user.id, date),
           getPunishmentForDate(user.id, date),
-          getDailyAchievementForDate(user.id, date)
+          getDailyAchievementForDate(user.id, date),
+          getMediaForDate(user.id, date),
         ]);
         setFailedItems(items);
         setPunishment(punishmentData);
         setDailyAchievement(achievement);
+        setMediaPaths(media);
       }
     } catch (error) {
       console.error('Failed to load daily details:', error);
@@ -316,6 +360,26 @@ export default function ProgressPage() {
                             <div className="p-3 rounded text-sm bg-amber-500/10 border border-amber-500/20">
                               <p className="text-sm whitespace-pre-line">{dailyAchievement}</p>
                             </div>
+                          </div>
+                        )}
+
+                        {/* Video/Audio Recordings */}
+                        {mediaPaths && (mediaPaths.video_path || mediaPaths.audio_path) && (
+                          <div className="mt-3 pt-3 border-t border-muted">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                              <Video className="w-3 h-3 text-primary" />
+                              Daily Reflection
+                            </div>
+                            {mediaPaths.video_path && (
+                              <div className="mb-2">
+                                <VideoPlayer filePath={mediaPaths.video_path} />
+                              </div>
+                            )}
+                            {mediaPaths.audio_path && (
+                              <div>
+                                <AudioPlayer filePath={mediaPaths.audio_path} />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
