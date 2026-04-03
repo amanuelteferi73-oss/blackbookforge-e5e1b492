@@ -63,14 +63,16 @@ export default function ProgressPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const [items, punishmentData, achievement] = await Promise.all([
+        const [items, punishmentData, achievement, media] = await Promise.all([
           getFailedItemsForDate(user.id, date),
           getPunishmentForDate(user.id, date),
-          getDailyAchievementForDate(user.id, date)
+          getDailyAchievementForDate(user.id, date),
+          getMediaForDate(user.id, date),
         ]);
         setFailedItems(items);
         setPunishment(punishmentData);
         setDailyAchievement(achievement);
+        setMediaPaths(media);
       }
     } catch (error) {
       console.error('Failed to load daily details:', error);
