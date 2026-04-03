@@ -322,6 +322,26 @@ export default function ProgressPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* Video/Audio Recordings */}
+                        {mediaPaths && (mediaPaths.video_path || mediaPaths.audio_path) && (
+                          <div className="mt-3 pt-3 border-t border-muted">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                              <Video className="w-3 h-3 text-primary" />
+                              Daily Reflection
+                            </div>
+                            {mediaPaths.video_path && (
+                              <div className="mb-2">
+                                <VideoPlayer filePath={mediaPaths.video_path} />
+                              </div>
+                            )}
+                            {mediaPaths.audio_path && (
+                              <div>
+                                <AudioPlayer filePath={mediaPaths.audio_path} />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
