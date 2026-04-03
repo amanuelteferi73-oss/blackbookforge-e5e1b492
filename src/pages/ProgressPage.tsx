@@ -19,6 +19,46 @@ interface PunishmentInfo {
   proof_feeling: string | null;
 }
 
+// Helper components for media playback from storage
+function VideoPlayer({ filePath }: { filePath: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  if (!url && !error) {
+    supabase.storage.from('checkin-media').createSignedUrl(filePath, 3600)
+      .then(({ data, error: err }) => {
+        if (err || !data) setError(true);
+        else setUrl(data.signedUrl);
+      });
+  }
+
+  if (error) return <p className="text-xs text-muted-foreground">Video unavailable</p>;
+  if (!url) return <p className="text-xs text-muted-foreground">Loading video...</p>;
+  return <video src={url} controls playsInline className="w-full rounded-md max-h-48 bg-black" />;
+}
+
+function AudioPlayer({ filePath }: { filePath: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  if (!url && !error) {
+    supabase.storage.from('checkin-media').createSignedUrl(filePath, 3600)
+      .then(({ data, error: err }) => {
+        if (err || !data) setError(true);
+        else setUrl(data.signedUrl);
+      });
+  }
+
+  if (error) return <p className="text-xs text-muted-foreground">Audio unavailable</p>;
+  if (!url) return <p className="text-xs text-muted-foreground">Loading audio...</p>;
+  return (
+    <div className="flex items-center gap-2">
+      <Mic className="w-3 h-3 text-primary" />
+      <audio src={url} controls className="w-full h-8" />
+    </div>
+  );
+}
+
 export default function ProgressPage() {
   const time = useTimeEngine(60000);
   const { currentStreak, totalCheckIns, isLoading: statsLoading } = useScoringEngine();
