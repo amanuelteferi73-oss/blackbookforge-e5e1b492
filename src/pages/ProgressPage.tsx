@@ -27,6 +27,7 @@ export default function ProgressPage() {
   const [failedItems, setFailedItems] = useState<FailedItem[]>([]);
   const [punishment, setPunishment] = useState<PunishmentInfo | null>(null);
   const [dailyAchievement, setDailyAchievement] = useState<string | null>(null);
+  const [mediaPaths, setMediaPaths] = useState<{ video_path: string | null; audio_path: string | null } | null>(null);
   const [loadingItems, setLoadingItems] = useState(false);
 
   const isLoading = statsLoading || historyLoading;
