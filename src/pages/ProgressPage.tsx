@@ -53,6 +53,7 @@ export default function ProgressPage() {
       setFailedItems([]);
       setPunishment(null);
       setDailyAchievement(null);
+      setMediaPaths(null);
       return;
     }
 
