@@ -107,11 +107,60 @@ export default function RecordPage() {
     };
   }, [mode, facingMode, state]);
 
-  // Start recording
+  // Draw timestamp overlay on canvas
+  const drawOverlay = useCallback(() => {
+    if (!canvasRef.current || !videoRef.current || mode !== 'video') return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = video.videoWidth || 1920;
+    canvas.height = video.videoHeight || 1080;
+
+    // Draw video frame (mirror if front camera)
+    ctx.save();
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    // Draw timestamp overlay
+    const now = new Date();
+    const dateText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const timeText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dayText = `DAY ${timeState.dayNumber}`;
+
+    const fontSize = Math.max(16, Math.floor(canvas.width / 60));
+    ctx.font = `bold ${fontSize}px monospace`;
+    
+    // Background box
+    const padding = 10;
+    const lineHeight = fontSize + 4;
+    const boxHeight = lineHeight * 3 + padding * 2;
+    const boxWidth = Math.max(
+      ctx.measureText(dateText).width,
+      ctx.measureText(timeText).width,
+      ctx.measureText(dayText).width
+    ) + padding * 2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.roundRect(12, 12, boxWidth, boxHeight, 6);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(dateText, 12 + padding, 12 + padding + fontSize);
+    ctx.fillText(timeText, 12 + padding, 12 + padding + fontSize + lineHeight);
+    ctx.fillStyle = 'hsl(142, 76%, 60%)';
+    ctx.fillText(dayText, 12 + padding, 12 + padding + fontSize + lineHeight * 2);
+  }, [mode, facingMode, timeState.dayNumber]);
+
+  // Start recording with canvas-based overlay for video
   const startRecording = useCallback(async () => {
     if (!streamRef.current && mode === 'audio') {
       await startCamera();
-      // Small delay to ensure stream is ready
       await new Promise(r => setTimeout(r, 300));
     }
     
@@ -122,7 +171,22 @@ export default function RecordPage() {
 
     chunksRef.current = [];
     
-    // Determine best codec
+    let recordStream: MediaStream;
+
+    if (mode === 'video' && canvasRef.current) {
+      // Use canvas stream to burn in timestamp overlay
+      overlayIntervalRef.current = window.setInterval(drawOverlay, 1000 / 30); // 30fps overlay
+      drawOverlay(); // Initial draw
+      
+      const canvasStream = canvasRef.current.captureStream(30);
+      // Add audio tracks from original stream
+      const audioTracks = streamRef.current.getAudioTracks();
+      audioTracks.forEach(t => canvasStream.addTrack(t));
+      recordStream = canvasStream;
+    } else {
+      recordStream = streamRef.current;
+    }
+
     const mimeType = mode === 'video'
       ? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') 
           ? 'video/webm;codecs=vp9,opus' 
@@ -133,9 +197,9 @@ export default function RecordPage() {
           ? 'audio/webm;codecs=opus'
           : 'audio/webm');
 
-    const recorder = new MediaRecorder(streamRef.current, {
+    const recorder = new MediaRecorder(recordStream, {
       mimeType,
-      videoBitsPerSecond: mode === 'video' ? 5_000_000 : undefined, // 5Mbps for quality
+      videoBitsPerSecond: mode === 'video' ? 5_000_000 : undefined,
       audioBitsPerSecond: 128_000,
     });
 
@@ -154,11 +218,10 @@ export default function RecordPage() {
     };
 
     recorderRef.current = recorder;
-    recorder.start(1000); // Collect data every second
+    recorder.start(1000);
     setState('recording');
     setElapsed(0);
 
-    // Timer
     timerRef.current = window.setInterval(() => {
       setElapsed(prev => {
         if (prev + 1 >= maxDuration) {
@@ -168,7 +231,7 @@ export default function RecordPage() {
         return prev + 1;
       });
     }, 1000);
-  }, [mode, maxDuration, startCamera]);
+  }, [mode, maxDuration, startCamera, drawOverlay]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
