@@ -398,6 +398,9 @@ export default function RecordPage() {
 
       {/* Camera preview / video area */}
       <div className="flex-1 relative flex items-center justify-center">
+        {/* Hidden canvas for recording with burned-in timestamp */}
+        <canvas ref={canvasRef} className="hidden" />
+
         {state !== 'preview' && mode === 'video' && (
           <video
             ref={videoRef}
@@ -412,9 +415,9 @@ export default function RecordPage() {
           <div className="flex flex-col items-center gap-4">
             <div className={cn(
               "w-32 h-32 rounded-full flex items-center justify-center",
-              state === 'recording' ? "bg-red-500/20 animate-pulse" : "bg-white/10"
+              state === 'recording' ? "bg-destructive/20 animate-pulse" : "bg-white/10"
             )}>
-              <Mic className={cn("h-16 w-16", state === 'recording' ? "text-red-500" : "text-white/60")} />
+              <Mic className={cn("h-16 w-16", state === 'recording' ? "text-destructive" : "text-white/60")} />
             </div>
             {state === 'recording' && (
               <p className="text-white/60 text-sm">Recording audio...</p>
@@ -440,9 +443,9 @@ export default function RecordPage() {
           )
         )}
 
-        {/* Overlay: date/time on video */}
+        {/* Live overlay indicator on screen (timestamp is burned into recording via canvas) */}
         {state === 'recording' && mode === 'video' && (
-          <div className="absolute top-16 left-4 bg-black/50 px-2 py-1 rounded">
+          <div className="absolute top-16 left-4 bg-black/50 px-2 py-1 rounded pointer-events-none">
             <p className="text-white/90 text-[10px] font-mono">{dateStr} • {timeStr}</p>
             <p className="text-primary text-[10px] font-mono">DAY {timeState.dayNumber}</p>
           </div>
