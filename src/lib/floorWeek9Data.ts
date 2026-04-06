@@ -81,34 +81,34 @@ export const WEEK_9_DATA = {
     },
     {
       dayNumber: 97,
-      title: "BELIEF BLUEPRINT CREATION",
-      intent: "Today you consolidate everything learned this week into a single, powerful identity document that becomes your north star.",
+      title: "THE REVELATION — KNOWLEDGE IS THE WEAPON",
+      intent: "Everything changed. You realized the billionaires you studied — Musk, Bezos, Son — they didn't just hustle. They KNEW physics, chemistry, biology at a level that let them see what others couldn't. Today you make the decision: 2 months of deep knowledge acquisition through the EUEE exam. Not for a certificate — for the MIND that creates billion-dollar ideas.",
       actions: [
-        "Create your 'BELIEF BLUEPRINT' — a 1-2 page document covering: Who I am. What I believe. What I refuse to accept. My non-negotiable daily actions.",
-        "Include: Your 300-year vision, your execution rules, your pain tolerance manifesto, your never-again list.",
-        "Study one more builder's story you haven't covered this week. Extract their #1 mental weapon.",
-        "Record a 5-minute video of yourself reading your Belief Blueprint aloud. Save it. Watch it when you doubt yourself.",
-        "Plan next week's business research in detail — what industries, what problems, what markets.",
-        "🏋️ 2-HOUR GYM SESSION — Celebrate the week's discipline with your hardest workout yet."
+        "Write your 'Knowledge Manifesto' — why gaining deep science knowledge (physics, chemistry, biology) is the real cheat code for entrepreneurship.",
+        "Set up your study environment: laptop, GlobeDock Academy bookmarked, Kehulum.com past papers saved, one Google Doc as your Innovation Portfolio.",
+        "Watch one GlobeDock video on kinematics (Grade 11 Physics) — just to taste the territory. Note how motion principles connect to robotics, drones, transport.",
+        "Create your 8-Week Quest Map poster/document: Episode 1 (Mechanics) → Episode 2 (Electromagnetism) → Episode 3 (Chemistry & Human Systems) → Episode 4 (Waves, Thermo & Genetics).",
+        "Write your first Innovation Spark: 'How could understanding motion and forces help me build something the world needs?'",
+        "🏋️ 2-HOUR GYM SESSION — The body that carries the knowledge. Compound lifts, full intensity."
       ],
-      rules: "The Belief Blueprint must be written by hand first, then typed. Gym is the victory lap.",
+      rules: "No more searching for ideas in the dark. You're building the foundation that makes ideas OBVIOUS. Phone away during study. Gym non-negotiable.",
       unlockText: null
     },
     {
       dayNumber: 98,
-      title: "RECHARGE & SHARPEN",
-      intent: "Strategic rest. Not laziness — intentional recovery that prepares you for the most important week of research ahead.",
+      title: "THE EXPLORER'S OATH",
+      intent: "Tomorrow the 8-week science exploration begins. Today you prepare like an explorer mapping unknown territories. Every topic is a new land with hidden business opportunities.",
       actions: [
-        "Morning: Re-read your Belief Blueprint. Does it still fire you up? Adjust if needed.",
-        "Watch 1-2 hours of inspirational content — but ONLY content that aligns with your new identity.",
-        "Light physical activity: walk, stretch, mobility work. Keep the body active.",
-        "Prepare research framework for Week 10: What criteria define the 'perfect business'? Revenue potential, scalability, your skills match, market timing.",
-        "Clean your workspace. Organize your digital tools. A clear environment = a clear mind.",
-        "🏋️ 2-HOUR GYM SESSION — Recovery day. Lighter weights, focus on form and flexibility.",
-        "Evening: Write a letter to your future self, 1 year from now. What did this week mean?"
+        "Download/bookmark all EUEE past papers from Kehulum.com and NEAEA. Organize by subject (Physics, Chemistry, Biology).",
+        "Watch 2 GlobeDock videos: one on vectors, one on Newton's laws. Take active notes — pause, visualize, question.",
+        "Write your Explorer's Oath: 'I explore science not to memorize — but to SEE what others can't. Every territory I map reveals a world hole I can fill.'",
+        "Set up your daily scene structure: Video Dive (40 min) → Quick Challenge (25 min) → Innovation Spark (15 min). Post-gym morning slot.",
+        "Review the full exam structure: Physics (mechanics + EM dominate 40%), Chemistry (equilibrium + organic = 30%), Biology (physiology + genetics = 30%). Prioritize high-frequency territories.",
+        "🏋️ 2-HOUR GYM SESSION — Recovery day. Focus on form. Tomorrow the real expedition begins.",
+        "Evening: Write a letter to Day 154 you: 'When you read this, you'll have mapped every territory and spotted opportunities invisible to everyone else.'"
       ],
-      rules: "Rest is strategic, not lazy. Tomorrow the real hunt begins. Gym stays mandatory even on recovery.",
-      unlockText: "#33 — MINDSET RECONSTRUCTED. THE BUILDER IS BACK."
+      rules: "Preparation is execution. Every resource must be ready before Day 99. Gym is the anchor that keeps you disciplined.",
+      unlockText: "#33 — MINDSET RECONSTRUCTED. THE EXPLORER AWAKENS."
     }
   ]
 };

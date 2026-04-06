@@ -1,116 +1,114 @@
 export const WEEK_10_DATA = {
   weekNumber: 10,
-  objective: "Find the ONE business idea worth dedicating the rest of the year (and beyond) to. Deep market research, problem validation, competitive analysis, and founder-market fit assessment. By Sunday, you have your answer.",
-  focusSplit: "Market Research & Validation (50%) — Industries, problems, opportunities\nBusiness Model Design (25%) — Revenue, scalability, moat analysis\nPhysical Discipline (15%) — 2-hour gym daily\nReflection & Decision (10%) — Journaling, frameworks, final decision",
-  successCondition: "By week end:\n• Researched 10+ industries/niches in depth\n• Validated 5+ problem spaces with real data\n• Narrowed to 3 finalists with full business model sketches\n• Made THE DECISION — 1 business to build for the next 12+ months\n• Created a 90-day execution roadmap for the chosen business\n• 7/7 gym sessions completed\n• Decision documented with reasoning (no second-guessing allowed)",
+  objective: "EPISODE 1: DISCOVERING MOTION & FORCES — Map the highest-frequency physics territory. Kinematics, Newton's laws, work-energy, and momentum form 17% of all EUEE questions. Every principle you master here connects to robotics, transport, drones, and billion-dollar engineering ventures.",
+  focusSplit: "Science Exploration (60%) — Video dives + past paper challenges on mechanics\nInnovation Portfolio (15%) — Daily sparks connecting physics to business opportunities\nPhysical Discipline (15%) — 2-hour daily gym sessions\nReflection & Logging (10%) — Episode tracking, quest logs",
+  successCondition: "By week end:\n• Completed 6 video dives on core mechanics topics\n• Solved 40+ real EUEE past questions on kinematics & dynamics\n• Written 6 Innovation Sparks connecting mechanics to ventures\n• Attempted 1 PR in the gym\n• Zero days missed\n• Can solve projectile motion and force equilibrium problems confidently",
   days: [
     {
       dayNumber: 99,
-      title: "THE LANDSCAPE SCAN",
-      intent: "Cast the widest net possible. Today you explore every industry, trend, and opportunity that could become a billion-dollar business. No filtering yet — pure exploration.",
+      title: "EPISODE 1, SCENE 1 — KINEMATICS: THE LANGUAGE OF MOTION",
+      intent: "Everything moves. Understanding HOW things move is the first territory. Graphs, equations, velocity, acceleration — this is the language that powers every machine, every vehicle, every robot ever built.",
       actions: [
-        "Research 15+ industries/niches: AI, SaaS, fintech, health tech, education, creator economy, logistics, marketplaces, etc. Write 2-3 sentences on each.",
-        "Study current Y Combinator batch trends. What problems are getting funded right now?",
-        "Research emerging markets in Africa, Southeast Asia, LATAM. What problems exist there that nobody is solving?",
-        "List 20 problems YOU personally experience or see around you. Rate each by: frequency, severity, willingness to pay.",
-        "Study 5 recent unicorn startups (founded in last 3 years). What pattern do you see?",
-        "🏋️ 2-HOUR GYM SESSION — Heavy day. Build the machine that powers the mind."
+        "🎬 VIDEO DIVE (40 min): Search 'GlobeDock kinematics Grade 11' or 'Motion in straight line EUEE'. Watch actively — pause at every graph, visualize the motion.",
+        "📝 Key concepts to lock: displacement vs distance, velocity vs speed, acceleration, s-t/v-t/a-t graphs, kinematic equations (v = u + at, s = ut + ½at², v² = u² + 2as).",
+        "🧩 QUICK CHALLENGE (25 min): Solve 5-8 EUEE past questions on velocity/acceleration graphs from Kehulum.com. Time yourself.",
+        "💡 INNOVATION SPARK: 'How could motion principles power efficient Ethiopian transport devices? What if I built a smart speed-monitoring system for Addis roads?'",
+        "📓 Log in portfolio: Episode 1 - Scene 1 ✅ + one key insight + one venture idea.",
+        "🏋️ 2-HOUR GYM SESSION — Heavy compounds. The body that masters physics masters everything."
       ],
-      rules: "No commitment today. Only exploration. Write everything down. Gym is sacred.",
+      rules: "Phone away during Video Dive and Challenge. No skipping the Spark — it's where billion-dollar thinking happens. Gym is sacred.",
       unlockText: null
     },
     {
       dayNumber: 100,
-      title: "DAY 100 — PROBLEM DEEP DIVE",
-      intent: "Day 100 of 365. A milestone. Today you go deep on the most promising problems. Validate with real data, not assumptions.",
+      title: "DAY 100 — VECTORS: DIRECTION CHANGES EVERYTHING",
+      intent: "Day 100 of 365. A century of days. Today you learn that DIRECTION matters as much as magnitude — in physics and in life. Vectors are the foundation of every force diagram, every engineering problem.",
       actions: [
-        "From yesterday's list, select the top 10 most promising problems. For each, find: market size, existing solutions, gaps.",
-        "Search Reddit, Quora, Twitter for people complaining about these problems. Screenshot real pain points.",
-        "Research competitors for each problem. Who's solving it? How well? Where are they weak?",
-        "For each problem, answer: Can I build a 10x better solution? Do I have unfair advantages? Is the market growing?",
-        "Talk to 3-5 people (online or offline) who experience these problems. Ask: What do you currently use? What's broken? Would you pay for X?",
-        "🏋️ 2-HOUR GYM SESSION — Milestone workout. Push every limit. Day 100 deserves intensity."
+        "🎬 VIDEO DIVE (40 min): 'GlobeDock vectors resolution' or 'Vectors EUEE Grade 11'. Focus on vector addition, components, resolution into x-y.",
+        "📝 Master: Vector notation, magnitude calculation (Pythagorean), angle determination (tan⁻¹), component method of addition, unit vectors.",
+        "🧩 QUICK CHALLENGE (25 min): 8 vector problems from past papers. Focus on resolving forces at angles.",
+        "💡 INNOVATION SPARK: 'Vectors control drone navigation and robotic arms. How could I use vector math to build precise automation tools for agriculture or delivery in Ethiopia?'",
+        "📓 Day 100 special log: Write what 100 days of discipline has taught you. Then log Scene 2 ✅.",
+        "🏋️ 2-HOUR GYM SESSION — MILESTONE WORKOUT. Push every limit. Day 100 deserves a PR attempt."
       ],
-      rules: "Data over opinions. If you can't find real users complaining about it, it's not a real problem. Gym celebrates Day 100.",
-      unlockText: "#100 — ONE HUNDRED DAYS IN. STILL STANDING. STILL BUILDING."
+      rules: "Day 100 is a landmark, not a holiday. Double the intensity in everything. Gym is the celebration.",
+      unlockText: "#100 — ONE HUNDRED DAYS IN. THE EXPLORER MAPS NEW TERRITORIES."
     },
     {
       dayNumber: 101,
-      title: "BUSINESS MODEL LABORATORY",
-      intent: "Problems without business models are hobbies. Today you design how each idea makes money — real revenue, real margins, real scalability.",
+      title: "SCENE 3 — NEWTON'S LAWS: THE RULES OF THE UNIVERSE",
+      intent: "Three laws govern every physical interaction in the universe. Newton didn't just describe nature — he gave us the CODE to build machines, rockets, and empires. Today you internalize that code.",
       actions: [
-        "For your top 7 problems, design a business model: Pricing (freemium/subscription/one-time), customer acquisition channels, unit economics.",
-        "Study business model patterns: marketplace commission, SaaS MRR, API/usage pricing, platform + services. Which fits each idea?",
-        "For each idea, calculate: What's the minimum viable revenue at 100 customers? At 1,000? At 10,000?",
-        "Research founder-market fit: Which of these ideas can YOU specifically build better than anyone else? Why?",
-        "Rank all 7 ideas on: Market Size × Your Skill Match × Revenue Potential × Passion × Speed to MVP",
-        "🏋️ 2-HOUR GYM SESSION — Strength training. The discipline carries over to decision-making."
+        "🎬 VIDEO DIVE (40 min): 'Newton's Laws EUEE' or 'GlobeDock dynamics Grade 11'. Cover all three laws with real-world examples.",
+        "📝 Lock in: F = ma (calculating net force), free body diagrams, friction (static vs kinetic, μ), inclined plane problems, tension in strings.",
+        "🧩 QUICK CHALLENGE (25 min): 8 force application questions from EUEE papers. Draw free body diagrams for EVERY problem.",
+        "💡 INNOVATION SPARK: 'What low-cost machine innovation could Newton's laws inspire for local manufacturing? Friction reduction = efficiency = profit.'",
+        "📓 Log Scene 3 ✅. Note which force concepts felt hardest — revisit those in review day.",
+        "🏋️ 2-HOUR GYM SESSION — Feel Newton's third law with every rep. Action-reaction. Push harder, grow stronger."
       ],
-      rules: "No idea survives without a path to revenue. Kill ideas that can't show clear monetization. Gym non-negotiable.",
+      rules: "Every problem gets a free body diagram. No shortcuts. Understanding forces = understanding everything built by humans. Gym non-negotiable.",
       unlockText: null
     },
     {
       dayNumber: 102,
-      title: "COMPETITIVE WARFARE ANALYSIS",
-      intent: "Know your enemies. Today you study every competitor in your top 5 spaces. Find weaknesses. Find opportunities they're ignoring.",
+      title: "SCENE 4 — WORK, ENERGY & POWER: THE CURRENCY OF THE UNIVERSE",
+      intent: "Energy cannot be created or destroyed — only transformed. This is the most powerful principle in physics AND in business. Today you learn the math of transformation.",
       actions: [
-        "Narrow to top 5 ideas. For each, identify the top 3 competitors. Analyze: features, pricing, reviews, weaknesses.",
-        "Read competitor reviews on G2, Capterra, Product Hunt, App Store. What do users hate? That's your opportunity.",
-        "Study competitor founding stories. How did they get their first 100 customers? Can you do it faster?",
-        "For each idea: Write a 1-paragraph 'Why I Win' statement. If you can't write it convincingly, drop the idea.",
-        "Research potential moats: network effects, data advantages, switching costs, brand, speed. Which ideas have defensibility?",
-        "🏋️ 2-HOUR GYM SESSION — Push day. Attack the weights like you'll attack the market."
+        "🎬 VIDEO DIVE (40 min): 'Work Energy Theorem EUEE' or 'GlobeDock energy conservation'. Cover work (W = Fd cosθ), KE, PE, conservation of energy.",
+        "📝 Master: Work-energy theorem, gravitational PE (mgh), elastic PE (½kx²), power (P = W/t = Fv), conservation problems, efficiency calculations.",
+        "🧩 QUICK CHALLENGE (25 min): 8 energy theorem problems. Focus on conservation of energy in roller coasters, pendulums, springs.",
+        "💡 INNOVATION SPARK: 'Energy harvesting is a billion-dollar market. What if I designed low-cost solar or kinetic energy devices for off-grid Ethiopian communities?'",
+        "📓 Log Scene 4 ✅. Rate your confidence: can you solve conservation problems without looking at formulas?",
+        "🏋️ 2-HOUR GYM SESSION — Power training. Explosive movements. Your body IS a work-energy system."
       ],
-      rules: "If you can't articulate why you beat existing solutions, the idea dies today. No emotional attachments. Gym stays.",
+      rules: "Energy conservation is non-negotiable in physics AND in your daily routine. Every joule of effort counts. Gym is your power output.",
       unlockText: null
     },
     {
       dayNumber: 103,
-      title: "THE FINAL THREE",
-      intent: "Cut to 3 finalists. For each, build a complete business sketch — the closest thing to a business plan without wasting time on docs nobody reads.",
+      title: "SCENE 5 — MOMENTUM & COLLISIONS: UNSTOPPABLE FORCE",
+      intent: "Momentum = mass × velocity. Once something massive moves fast enough, NOTHING stops it. That's you. Today you learn the physics of being unstoppable.",
       actions: [
-        "Select your final 3 ideas. For each create: 1-page business sketch covering problem, solution, target customer, business model, go-to-market, 90-day plan.",
-        "For each finalist: What does the MVP look like? How long to build? What's the fastest path to first dollar?",
-        "Score each finalist: Technical feasibility (1-10), Market opportunity (1-10), Your passion (1-10), Speed to revenue (1-10).",
-        "Ask yourself the Bezos Regret Minimization question for each: 'At 80, which would I regret NOT trying?'",
-        "Share your top 3 with someone you trust. Get their honest reaction. Which one excites THEM?",
-        "🏋️ 2-HOUR GYM SESSION — Pull day. Build the back that carries the weight of decision."
+        "🎬 VIDEO DIVE (40 min): 'Momentum collisions EUEE' or 'GlobeDock linear momentum'. Cover impulse, conservation of momentum, elastic vs inelastic collisions.",
+        "📝 Lock in: p = mv, impulse (J = FΔt = Δp), conservation of momentum (m₁v₁ + m₂v₂ = m₁v₁' + m₂v₂'), coefficient of restitution, 2D collision basics.",
+        "🧩 QUICK CHALLENGE (25 min): 8 collision calculation problems from past papers. Identify elastic vs inelastic from data.",
+        "💡 INNOVATION SPARK: 'How does conservation of momentum open doors in safety tech? Airbag design, sports equipment, vehicle crash analysis — what could I build?'",
+        "📓 Log Scene 5 ✅. You're halfway through Episode 1. Reflect: what patterns do you see across all mechanics topics?",
+        "🏋️ 2-HOUR GYM SESSION — Heavy squats and deadlifts. Maximum momentum in the gym."
       ],
-      rules: "3 finalists maximum. No expanding the list. The decision narrows HERE. Gym mandatory.",
+      rules: "Momentum problems require careful sign conventions. Be precise. In physics and in life, direction matters. Gym mandatory.",
       unlockText: null
     },
     {
       dayNumber: 104,
-      title: "DECISION DAY — THE ONE",
-      intent: "Today you make THE decision. One business. One path. One commitment. No looking back. This is the most important business decision of your year.",
+      title: "SCENE 6 — TERRITORY REVIEW: MECHANICS MASTERY CHECK",
+      intent: "You've covered the fundamentals. Today you stress-test your knowledge with a mixed challenge set. Weaknesses exposed today become strengths by next week.",
       actions: [
-        "Morning: Review all 3 finalists with fresh eyes. Which one makes your heart race AND your brain calculate?",
-        "Apply the 'Sunday Test': If you had to work on only ONE of these next Sunday for free, which would it be?",
-        "Write the final decision document: 'I am building [X] because [reasons]. I commit to this for the next 12 months minimum.'",
-        "Create the 90-day execution roadmap: Month 1 (MVP build), Month 2 (Launch + first users), Month 3 (Revenue + iteration).",
-        "Burn the other ideas. Write them down on paper and physically cross them out. They're dead. Focus is power.",
-        "Record a video of yourself announcing your decision. This is your commitment contract.",
-        "🏋️ 2-HOUR GYM SESSION — Legs day. The foundation that carries everything above it."
+        "🧩 MEGA CHALLENGE (60 min): 15-20 mixed EUEE past questions covering ALL mechanics topics (kinematics, vectors, Newton's laws, energy, momentum). Time yourself — aim for exam pace.",
+        "📝 Review every wrong answer. Don't just find the right answer — understand WHY you got it wrong. Write the corrected approach.",
+        "🎬 RE-WATCH (20 min): Go back to the ONE topic you struggled with most. Watch another video on it. Different perspective, same concept.",
+        "💡 INNOVATION SPARK — TERRITORY SUMMARY: 'Mechanics shows how simple energy and motion laws can create affordable, scalable devices — perfect for mixing with software to build smart solutions that work in resource-limited settings but scale internationally.'",
+        "📓 Episode 1 Week 1 Quest Log: 'What mechanics territory did I map? What hole/opportunity did I spot? Confidence level 1-10?'",
+        "🏋️ 2-HOUR GYM SESSION — Active recovery. Lighter weights, perfect form, mobility work."
       ],
-      rules: "The decision is FINAL. No reversing next week. Sign the document. Commit or die trying. Gym seals the deal.",
+      rules: "Honesty in review. Don't skip wrong answers — they're the treasure map to higher scores. Gym even on review days.",
       unlockText: null
     },
     {
       dayNumber: 105,
-      title: "ROADMAP & LAUNCH PREP",
-      intent: "The decision is made. Today you prepare everything needed to start building on Day 1 of next week. Tools, timeline, first actions — all locked in.",
+      title: "SCENE 7 — FLEX DAY + INNOVATION CELEBRATION",
+      intent: "Rest is strategic. Today you let mechanics settle in your mind while watching one international startup video that connects physics to real-world ventures. Recharge for Week 2.",
       actions: [
-        "Break down Month 1 of your 90-day roadmap into weekly milestones. Week 11 = What exactly?",
-        "Set up all tools: development environment, project management, domain, landing page draft, analytics.",
-        "Research and list the first 10 potential customers you'll reach out to in Week 11.",
-        "Study the #1 competitor one more time. Find the exact gap your MVP will exploit.",
-        "Write your 'Week 11 Battle Plan' — hour by hour for Day 1. No ambiguity.",
-        "Clean up, organize everything from this research week into a single reference document.",
-        "🏋️ 2-HOUR GYM SESSION — Full body. You enter next week as a machine.",
-        "Evening: Re-read your Belief Blueprint. Update it with your new business commitment."
+        "🎬 REWARD VIDEO (45 min): Watch a documentary or video about a robotics/energy/transport startup that uses mechanics principles. Examples: Boston Dynamics, Tesla autopilot engineering, SpaceX landing physics.",
+        "💡 DEEP SPARK (20 min): Write a full paragraph connecting everything you learned this week to ONE specific business idea. Be concrete: who's the customer, what's the product, how does mechanics knowledge give you an edge?",
+        "📓 Portfolio entry: Add your Global Opportunity Note for Episode 1 Territory 1: mechanics + software = what venture?",
+        "Light physical activity: walk, stretch, or mobility. Keep the body active but don't exhaust it.",
+        "Preview next week: Projectile motion, circular motion, rotational dynamics. These are the advanced mechanics that separate top scorers.",
+        "🏋️ 2-HOUR GYM SESSION — Celebration workout. You mapped your first territory. Enjoy the process.",
+        "Evening: Update your Quest Map. Episode 1, Week 1: ✅ MAPPED."
       ],
-      rules: "Preparation, not procrastination. Everything must be actionable for Monday morning. Gym closes the week.",
-      unlockText: "#34 — THE PATH IS CHOSEN. THE BUILDER HAS A MISSION."
+      rules: "Flex doesn't mean lazy. You watch, you think, you connect. The brain needs variety to consolidate. Gym closes the week strong.",
+      unlockText: "#34 — FIRST TERRITORY MAPPED. THE EXPLORER SEES WHAT OTHERS CAN'T."
     }
   ]
 };
