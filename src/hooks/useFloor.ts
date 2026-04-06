@@ -11,7 +11,13 @@ import { WEEK_7_DATA } from '@/lib/floorWeek7Data';
 import { WEEK_8_DATA } from '@/lib/floorWeek8Data';
 import { WEEK_9_DATA } from '@/lib/floorWeek9Data';
 import { WEEK_10_DATA } from '@/lib/floorWeek10Data';
-
+import { WEEK_11_DATA } from '@/lib/floorWeek11Data';
+import { WEEK_12_DATA } from '@/lib/floorWeek12Data';
+import { WEEK_13_DATA } from '@/lib/floorWeek13Data';
+import { WEEK_14_DATA } from '@/lib/floorWeek14Data';
+import { WEEK_15_DATA } from '@/lib/floorWeek15Data';
+import { WEEK_16_DATA } from '@/lib/floorWeek16Data';
+import { WEEK_17_DATA } from '@/lib/floorWeek17Data';
 export interface FloorDay {
   id: string;
   week_id: string;
