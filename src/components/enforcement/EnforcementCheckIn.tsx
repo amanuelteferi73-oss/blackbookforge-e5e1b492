@@ -38,6 +38,7 @@ const PILLAR_ICONS = {
 
 export function EnforcementCheckIn() {
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
   const timeState = useTimeEngine(60000);
   const [answers, setAnswers] = useState<Map<string, boolean>>(new Map());
   const [selectedPillars, setSelectedPillars] = useState<PillarType[]>([]);
