@@ -22,12 +22,13 @@ export function useOfflineSync(userId: string | null) {
     for (const item of pending) {
       try {
         // Insert check-in
+        const insertPayload = {
+          ...item.payload,
+          user_id: userId,
+        } as any;
         const { data: checkIn, error: checkInError } = await supabase
           .from('daily_checkins')
-          .insert({
-            ...item.payload,
-            user_id: userId,
-          })
+          .insert(insertPayload)
           .select()
           .single();
 
