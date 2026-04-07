@@ -92,6 +92,8 @@ export function UserInitProvider({ children }: Props) {
 
   // Offline cache sync
   useOfflineCache(userId);
+  // Offline queue sync (check-ins + media)
+  useOfflineSync(userId);
 
   return (
     <UserInitContext.Provider value={{ isInitialized, isInitializing, userId }}>
