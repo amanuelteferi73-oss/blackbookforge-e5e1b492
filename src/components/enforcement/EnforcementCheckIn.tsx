@@ -613,6 +613,14 @@ export function EnforcementCheckIn() {
   // Active check-in form
   return (
     <div className="space-y-6">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm">
+          <WifiOff className="h-4 w-4 text-amber-500 shrink-0" />
+          <span>You're offline. Check-in will be saved locally and synced when you're back online.</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold">Daily Check-In</h1>
