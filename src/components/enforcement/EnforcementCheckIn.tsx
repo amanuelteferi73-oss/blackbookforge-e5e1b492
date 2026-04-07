@@ -266,22 +266,54 @@ export function EnforcementCheckIn() {
         selectedPillars.includes('floor') ? floorData.actions : []
       );
 
-      // Create the check-in record with selected_pillars
+      const checkInPayload = {
+        date: todayKey,
+        total_score: result.percentage,
+        discipline_breach: result.disciplineBreach,
+        submitted_at: new Date().toISOString(),
+        is_missed: false,
+        focus_pillar: selectedPillars[0] || null,
+        selected_pillars: selectedPillars,
+        daily_achievement: dailyAchievement.trim() || null,
+        audio_path: mediaPaths.audio || null,
+        video_path: mediaPaths.video || null,
+      };
+
+      const failedItemsData = result.failedItems.map(item => ({
+        section: item.section,
+        question_text: item.questionText,
+        severity: item.severity,
+        points_lost: item.pointsLost,
+      }));
+
+      // OFFLINE MODE: Queue locally if no connection
+      if (!isOnline) {
+        await queueCheckIn({
+          id: `offline_${todayKey}_${Date.now()}`,
+          date: todayKey,
+          payload: checkInPayload,
+          failedItems: failedItemsData,
+          createdAt: new Date().toISOString(),
+          synced: false,
+        });
+
+        toast({ 
+          title: '📱 Check-in saved offline', 
+          description: `Score: ${result.percentage}% — Will sync when you're back online.` 
+        });
+
+        setExistingCheckIn({ ...checkInPayload, id: 'offline_pending' });
+        setFailedItems(failedItemsData);
+        return;
+      }
+
+      // ONLINE MODE: Submit directly
       const { data: checkIn, error: checkInError } = await supabase
         .from('daily_checkins')
         .insert({
           user_id: userId,
-          date: todayKey,
-          total_score: result.percentage,
-          discipline_breach: result.disciplineBreach,
-          submitted_at: new Date().toISOString(),
-          is_missed: false,
-          focus_pillar: selectedPillars[0] || null,
-          selected_pillars: selectedPillars,
-          daily_achievement: dailyAchievement.trim() || null,
-          audio_path: mediaPaths.audio || null,
-          video_path: mediaPaths.video || null,
-        })
+          ...checkInPayload,
+        } as any)
         .select()
         .single();
 
@@ -327,15 +359,54 @@ export function EnforcementCheckIn() {
       }
 
       setExistingCheckIn(checkIn);
-      setFailedItems(result.failedItems.map(item => ({
-        section: item.section,
-        question_text: item.questionText,
-        severity: item.severity,
-        points_lost: item.pointsLost,
-      })));
+      setFailedItems(failedItemsData);
 
     } catch (error: any) {
       console.error('Submit error:', error);
+      
+      // If network error, fall back to offline queue
+      if (!navigator.onLine || error.message?.includes('fetch') || error.message?.includes('network')) {
+        try {
+          const todayKey = getTodayKey();
+          const answerArray: QuestionAnswer[] = Array.from(answers.entries()).map(
+            ([questionId, value]) => ({ questionId, value })
+          );
+          const result = calculateCheckInScoreMulti(answerArray, selectedPillars,
+            selectedPillars.includes('floor') ? floorData.actions : []);
+          
+          await queueCheckIn({
+            id: `offline_${todayKey}_${Date.now()}`,
+            date: todayKey,
+            payload: {
+              date: todayKey,
+              total_score: result.percentage,
+              discipline_breach: result.disciplineBreach,
+              submitted_at: new Date().toISOString(),
+              is_missed: false,
+              focus_pillar: selectedPillars[0] || null,
+              selected_pillars: selectedPillars,
+              daily_achievement: dailyAchievement.trim() || null,
+            },
+            failedItems: result.failedItems.map(item => ({
+              section: item.section,
+              question_text: item.questionText,
+              severity: item.severity,
+              points_lost: item.pointsLost,
+            })),
+            createdAt: new Date().toISOString(),
+            synced: false,
+          });
+          
+          toast({ 
+            title: '📱 Saved offline (network error)', 
+            description: 'Will sync automatically when connection returns.' 
+          });
+          return;
+        } catch (offlineErr) {
+          console.error('Offline queue also failed:', offlineErr);
+        }
+      }
+      
       toast({ 
         title: 'Submission failed', 
         description: error.message,
