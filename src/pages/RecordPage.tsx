@@ -21,6 +21,7 @@ type RecordState = 'idle' | 'recording' | 'preview';
 export default function RecordPage() {
   const navigate = useNavigate();
   const timeState = useTimeEngine(1000);
+  const isOnline = useOnlineStatus();
   
   const [mode, setMode] = useState<RecordMode>('video');
   const [state, setState] = useState<RecordState>('idle');
