@@ -1,6 +1,9 @@
-// FORGE Service Worker - Handles background notifications + offline caching
-const CACHE_NAME = 'forge-v2';
-const STATIC_ASSETS = [
+// FORGE Service Worker v3 - Full Offline Support
+const CACHE_NAME = 'forge-v3';
+const RUNTIME_CACHE = 'forge-runtime-v3';
+
+// App shell - these get precached on install
+const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/favicon.png',
@@ -131,82 +134,105 @@ async function checkAndNotify() {
   else if (hoursLeft <= 1 && hoursLeft > 0.9) await showCheckInReminder(1);
 }
 
-// === INSTALL: Cache static assets ===
+// === INSTALL: Precache app shell + skip waiting ===
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing FORGE Service Worker v2');
+  console.log('[SW] Installing FORGE Service Worker v3 - Full Offline');
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-        console.warn('[SW] Some assets failed to cache:', err);
+      return cache.addAll(PRECACHE_URLS).catch(err => {
+        console.warn('[SW] Some precache assets failed:', err);
       });
     })
   );
   self.skipWaiting();
 });
 
-// === ACTIVATE: Clean old caches ===
+// === ACTIVATE: Clean old caches + claim clients ===
 self.addEventListener('activate', (event) => {
-  console.log('[SW] FORGE Service Worker v2 activated');
+  console.log('[SW] FORGE Service Worker v3 activated');
   event.waitUntil(
     caches.keys().then(keys => 
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => clients.claim())
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME && k !== RUNTIME_CACHE)
+          .map(k => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-// === FETCH: Network-first with cache fallback for navigation, cache-first for assets ===
+// === FETCH: Aggressive offline strategy ===
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Skip non-GET and cross-origin
+  // Skip non-GET
   if (event.request.method !== 'GET') return;
+  // Skip cross-origin API calls (Supabase REST/Auth)
   if (url.origin !== self.location.origin) return;
   // Skip auth routes
   if (url.pathname.startsWith('/~oauth')) return;
 
-  // For navigation requests: network-first, fallback to cached index.html
+  // NAVIGATION: Network-first, fallback to cached /index.html (SPA)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
+          // Cache successful navigation responses
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then(cache => cache.put('/', clone));
           return response;
         })
-        .catch(() => caches.match('/index.html'))
+        .catch(() => {
+          // Offline → serve cached index.html for ANY route (SPA)
+          return caches.match('/index.html') || caches.match('/');
+        })
     );
     return;
   }
 
-  // For JS/CSS/images: stale-while-revalidate
-  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ico)$/)) {
+  // STATIC ASSETS (JS/CSS/fonts/images): Cache-first, then network
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ico|webmanifest)$/) || url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
-        const fetchPromise = fetch(event.request).then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        if (cached) {
+          // Return cache immediately, revalidate in background
+          fetch(event.request).then(response => {
+            if (response.ok) {
+              caches.open(RUNTIME_CACHE).then(cache => cache.put(event.request, response));
+            }
+          }).catch(() => {});
+          return cached;
+        }
+        // Not cached → fetch and cache
+        return fetch(event.request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(RUNTIME_CACHE).then(cache => cache.put(event.request, clone));
+          }
           return response;
-        }).catch(() => cached);
-        return cached || fetchPromise;
+        }).catch(() => {
+          // Return empty response for missing assets when offline
+          return new Response('', { status: 503, statusText: 'Offline' });
+        });
       })
     );
     return;
   }
 });
 
-// Handle notification clicks
+// === NOTIFICATION HANDLERS ===
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const urlToOpen = event.notification.data?.url || '/';
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(urlToOpen);
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow(urlToOpen);
+      if (self.clients.openWindow) return self.clients.openWindow(urlToOpen);
     })
   );
 });
@@ -245,9 +271,10 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'TEST_CHECKIN') event.waitUntil(showCheckInReminder(event.data.hours || 2));
   else if (event.data.type === 'TEST_DISCIPLINE') event.waitUntil(showDisciplineReminder());
   else if (event.data.type === 'SCHEDULE_NOTIFICATIONS') scheduleNotifications();
+  else if (event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// Fallback scheduling
+// Fallback scheduling for notifications
 let hourlyInterval = null;
 let checkInInterval = null;
 
