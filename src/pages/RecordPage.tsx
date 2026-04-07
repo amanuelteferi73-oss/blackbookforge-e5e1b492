@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { getTodayKey } from '@/lib/timeEngine';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { queueMedia } from '@/lib/offlineDb';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { 
   Video, VideoOff, Mic, MicOff, Camera, RotateCcw, 
   Square, Circle, ArrowLeft, Save, Trash2, Play, 
-  Loader2, CheckCircle, Settings
+  Loader2, CheckCircle, Settings, WifiOff
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
