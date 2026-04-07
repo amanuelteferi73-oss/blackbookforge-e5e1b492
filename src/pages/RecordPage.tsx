@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useTimeEngine } from '@/hooks/useTimeEngine';
 import { getTodayKey } from '@/lib/timeEngine';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { queueMedia } from '@/lib/offlineDb';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { 
   Video, VideoOff, Mic, MicOff, Camera, RotateCcw, 
   Square, Circle, ArrowLeft, Save, Trash2, Play, 
-  Loader2, CheckCircle, Settings
+  Loader2, CheckCircle, Settings, WifiOff
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -19,6 +21,7 @@ type RecordState = 'idle' | 'recording' | 'preview';
 export default function RecordPage() {
   const navigate = useNavigate();
   const timeState = useTimeEngine(1000);
+  const isOnline = useOnlineStatus();
   
   const [mode, setMode] = useState<RecordMode>('video');
   const [state, setState] = useState<RecordState>('idle');
@@ -277,7 +280,28 @@ export default function RecordPage() {
       const ext = 'webm';
       const filePath = `${userId}/${todayKey}_${mode}_reflection.${ext}`;
 
-      // Upload to storage
+      // OFFLINE: Save to IndexedDB queue
+      if (!navigator.onLine) {
+        await queueMedia({
+          id: `media_${todayKey}_${mode}_${Date.now()}`,
+          date: todayKey,
+          type: mode,
+          blob,
+          filePath,
+          userId,
+          createdAt: new Date().toISOString(),
+          synced: false,
+        });
+
+        toast({ 
+          title: `${mode === 'video' ? 'Video' : 'Audio'} saved offline!`, 
+          description: 'Will upload to cloud when you\'re back online.' 
+        });
+        navigate('/check-in');
+        return;
+      }
+
+      // ONLINE: Upload directly
       const { error: uploadError } = await supabase.storage
         .from('checkin-media')
         .upload(filePath, blob, { upsert: true, contentType: mode === 'video' ? 'video/webm' : 'audio/webm' });
@@ -307,7 +331,6 @@ export default function RecordPage() {
         checkIn = newCheckIn;
       }
 
-      // Update check-in with media path
       const updateData = mode === 'video'
         ? { video_path: filePath }
         : { audio_path: filePath };
@@ -322,11 +345,31 @@ export default function RecordPage() {
       toast({ title: `${mode === 'video' ? 'Video' : 'Audio'} reflection saved!`, description: 'Attached to today\'s check-in permanently.' });
       navigate('/check-in');
     } catch (err: any) {
+      // Network error fallback → save offline
+      if (!navigator.onLine || err.message?.includes('fetch')) {
+        try {
+          const todayKey = getTodayKey();
+          const filePath = `${userId}/${todayKey}_${mode}_reflection.webm`;
+          await queueMedia({
+            id: `media_${todayKey}_${mode}_${Date.now()}`,
+            date: todayKey,
+            type: mode,
+            blob: blob!,
+            filePath,
+            userId: userId!,
+            createdAt: new Date().toISOString(),
+            synced: false,
+          });
+          toast({ title: 'Saved offline (network error)', description: 'Will upload when connection returns.' });
+          navigate('/check-in');
+          return;
+        } catch {}
+      }
       toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
-  }, [blob, userId, mode, navigate]);
+  }, [blob, userId, mode, navigate, isOnline]);
 
   // Format timer
   const formatTime = (s: number) => {

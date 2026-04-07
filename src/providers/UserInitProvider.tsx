@@ -2,6 +2,7 @@ import { useEffect, useState, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import { seedDefaultRules, userHasRules } from '@/lib/defaultRules';
 import { useOfflineCache } from '@/hooks/useOfflineCache';
+import { useOfflineSync } from '@/hooks/useOfflineSync';
 
 interface UserInitContextType {
   isInitialized: boolean;
@@ -91,6 +92,8 @@ export function UserInitProvider({ children }: Props) {
 
   // Offline cache sync
   useOfflineCache(userId);
+  // Offline queue sync (check-ins + media)
+  useOfflineSync(userId);
 
   return (
     <UserInitContext.Provider value={{ isInitialized, isInitializing, userId }}>

@@ -1,6 +1,7 @@
-// Offline cache layer - caches critical data in localStorage for offline access
+// Offline cache layer - caches critical data in localStorage + IndexedDB for offline access
 import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { setCacheItem, getCacheItem } from '@/lib/offlineDb';
 
 const CACHE_KEYS = {
   FLOOR_WEEKS: 'forge_offline_floor_weeks',
@@ -11,21 +12,17 @@ const CACHE_KEYS = {
   LAST_SYNC: 'forge_offline_last_sync',
 };
 
-export function getOfflineFloorData() {
+export async function getOfflineFloorData() {
   try {
-    const weeks = localStorage.getItem(CACHE_KEYS.FLOOR_WEEKS);
-    const days = localStorage.getItem(CACHE_KEYS.FLOOR_DAYS);
-    return {
-      weeks: weeks ? JSON.parse(weeks) : [],
-      days: days ? JSON.parse(days) : [],
-    };
+    const weeks = await getCacheItem('floor_weeks') || JSON.parse(localStorage.getItem(CACHE_KEYS.FLOOR_WEEKS) || '[]');
+    const days = await getCacheItem('floor_days') || JSON.parse(localStorage.getItem(CACHE_KEYS.FLOOR_DAYS) || '[]');
+    return { weeks, days };
   } catch { return { weeks: [], days: [] }; }
 }
 
-export function getOfflineCheckIns() {
+export async function getOfflineCheckIns() {
   try {
-    const data = localStorage.getItem(CACHE_KEYS.CHECKINS);
-    return data ? JSON.parse(data) : [];
+    return await getCacheItem('checkins') || JSON.parse(localStorage.getItem(CACHE_KEYS.CHECKINS) || '[]');
   } catch { return []; }
 }
 
@@ -44,7 +41,7 @@ export function cacheTimeState(state: any) {
 
 export function useOfflineCache(userId: string | null) {
   const syncFloorData = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !navigator.onLine) return;
     try {
       const { data: weeks } = await supabase
         .from('floor_weeks')
@@ -54,6 +51,7 @@ export function useOfflineCache(userId: string | null) {
 
       if (weeks) {
         localStorage.setItem(CACHE_KEYS.FLOOR_WEEKS, JSON.stringify(weeks));
+        await setCacheItem('floor_weeks', weeks);
         const weekIds = weeks.map(w => w.id);
         if (weekIds.length > 0) {
           const { data: days } = await supabase
@@ -61,14 +59,17 @@ export function useOfflineCache(userId: string | null) {
             .select('*')
             .in('week_id', weekIds)
             .order('day_number');
-          if (days) localStorage.setItem(CACHE_KEYS.FLOOR_DAYS, JSON.stringify(days));
+          if (days) {
+            localStorage.setItem(CACHE_KEYS.FLOOR_DAYS, JSON.stringify(days));
+            await setCacheItem('floor_days', days);
+          }
         }
       }
     } catch (e) { console.warn('[OFFLINE] Floor sync failed:', e); }
   }, [userId]);
 
   const syncCheckIns = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !navigator.onLine) return;
     try {
       const { data } = await supabase
         .from('daily_checkins')
@@ -76,11 +77,15 @@ export function useOfflineCache(userId: string | null) {
         .eq('user_id', userId)
         .order('date', { ascending: false })
         .limit(30);
-      if (data) localStorage.setItem(CACHE_KEYS.CHECKINS, JSON.stringify(data));
+      if (data) {
+        localStorage.setItem(CACHE_KEYS.CHECKINS, JSON.stringify(data));
+        await setCacheItem('checkins', data);
+      }
     } catch (e) { console.warn('[OFFLINE] Check-in sync failed:', e); }
   }, [userId]);
 
   const syncAll = useCallback(async () => {
+    if (!navigator.onLine) return;
     await Promise.all([syncFloorData(), syncCheckIns()]);
     localStorage.setItem(CACHE_KEYS.LAST_SYNC, new Date().toISOString());
     console.log('[OFFLINE] Cache synced');
@@ -90,15 +95,17 @@ export function useOfflineCache(userId: string | null) {
   useEffect(() => {
     if (!userId) return;
     
-    // Sync on mount
-    syncAll();
+    // Sync on mount if online
+    if (navigator.onLine) syncAll();
 
     // Sync when coming back online
     const handleOnline = () => syncAll();
     window.addEventListener('online', handleOnline);
     
     // Sync every 5 minutes
-    const interval = setInterval(syncAll, 5 * 60 * 1000);
+    const interval = setInterval(() => {
+      if (navigator.onLine) syncAll();
+    }, 5 * 60 * 1000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
